@@ -33,8 +33,24 @@ namespace MDMazeGeneration
 
         public static int Dimensions { get { return dimensions; } }
         public static int[] DimensionInfo { get { return dimensionInfo; } }
-        public static int[] Entrance { get { return entranceCoor; } }
-        public static int[] Exit { get { return exitCoor; } }
+        public static int[] Entrance
+        {
+            get
+            {
+                int[] _entrance = new int[dimensions];
+                Array.Copy(entranceCoor, _entrance, dimensions);
+                return _entrance;
+            }
+        }
+        public static int[] Exit
+        {
+            get
+            {
+                int[] _exit = new int[dimensions];
+                Array.Copy(exitCoor, _exit, dimensions);
+                return _exit;
+            }
+        }
         public static int[] IntialDimensions
         {
             get
@@ -86,6 +102,26 @@ namespace MDMazeGeneration
                 return _lostCells;
             }
         }
+        public static bool EntranceViewable
+        {
+            get
+            {
+                for (int _d = 0; _d < dimensions; _d++)
+                    if (_d != World.DimensionX && _d != World.DimensionY && Entrance[_d] != World.CenterCell[_d])
+                        return false;
+                return true;
+            }
+        }
+        public static bool ExitViewable
+        {
+            get
+            {
+                for (int _d = 0; _d < dimensions; _d++)
+                    if (_d != World.DimensionX && _d != World.DimensionY && Exit[_d] != World.CenterCell[_d])
+                        return false;
+                return true;
+            }
+        }
         public static int[,] Viewable2D { get { return viewable2D; } }
 
         /// <summary>
@@ -106,14 +142,13 @@ namespace MDMazeGeneration
             dimensionInfo = _dInfo;
             dimensions = dimensionInfo.Length;
 
-            //cellScale = _cellScale;
-            //safeZonePercent = safeZonePercent - (int)safeZonePercent;
-
             sets = new List<Cell>();
 
             InitStorage();
 
             Build();
+
+            SetupViewable2D();
         }
 
         /// <summary>
@@ -154,9 +189,6 @@ namespace MDMazeGeneration
 
             //Get entrance and exit
             GetOpenings();
-
-            //DEBUGGING
-            //PrintCellInfo();
         }
 
         /// <summary>
@@ -194,9 +226,6 @@ namespace MDMazeGeneration
         /// </summary>
         static void JoinSets()
         {
-            //Debugging
-            //PrintCellInfo();
-
             while (sets.Count > 1)
             {
                 sets.RemoveAll(x => x.parent != null);
@@ -244,56 +273,6 @@ namespace MDMazeGeneration
             }
         }
 
-   /*     /// <summary>
-        /// Testing method, prints information about current cells
-        /// </summary>
-        public static void PrintCellInfo()
-        {
-            Console.WriteLine("Sets: {0}", sets.Count());
-            //Console.WriteLine("Cells created: {0} Cells written: {1} Cells in Sets: {2}", cellsCreated, cellsWritten, cellsInSets);
-            if (lostCells)
-            {
-                for (int _i = 0; _i < sets.Count(); _i++)
-                    Console.WriteLine("Set {0} : {1} - {2}", _i, sets.ElementAt(_i).GetSetSize(), sets.ElementAt(_i).ToString());
-                
-
-                if (lostCells)
-                {
-                    Console.WriteLine("ERROR: Lost cells");
-
-                    StackTrace stackTrace = new StackTrace();
-                    for (int _f = stackTrace.FrameCount - 1; _f > 0; _f--)
-                    {
-                        Console.WriteLine("{0}{1}", new String(' ', stackTrace.FrameCount - _f), stackTrace.GetFrame(_f).GetMethod().Name);
-                    }
-                    if (setWithLostCells >= 0)
-                    {
-                        Console.WriteLine("Cells lost from set {0}", setWithLostCells);
-                        Console.WriteLine("Correct set:\n{0}", setTrees[setWithLostCells]);
-                        Console.WriteLine("Incorrect set:\n{0}", sets.ElementAt(setWithLostCells).SetToString());
-                    }
-                    /*foreach (StackFrame _f in stackTrace.GetFrames())
-                    {
-                        Console.WriteLine("\t{0}", _f.GetMethod().Name);
-                    }*/
-                    //Console.WriteLine(stackTrace.GetFrame(1).GetMethod().Name);
-                   /* Console.ReadLine();
-                }
-                else
-                {
-                    Console.WriteLine();
-                }
-
-                setTrees = new string[sets.Count()];
-                setCounts = new int[sets.Count()];
-                for (int _i = 0; _i < sets.Count(); _i++)
-                {
-                    setTrees[_i] = sets.ElementAt(_i).SetToString();
-                    setCounts[_i] = sets.ElementAt(_i).GetSetSize();
-                }
-            }
-        }*/
-
         /// <summary>
         /// Gets the entrance and exit to the maze
         /// </summary>
@@ -305,29 +284,23 @@ namespace MDMazeGeneration
         }
 
         /// <summary>
-        /// Gets an 2D array of integers that define the maze in the current viewable dimensions
-        /// Bit Values define parts of maze
-        /// If bit 0 = 1, value represents a bound
-        ///     bit 1 represents opened (0) or closed (1) status of bound
-        /// If bit 0 = 0, value represents a cell interior
-        ///     bit 1 represents ascending (1) or not (0)
-        ///     bit 2 represents descending (1) or not (0)
+        /// Sets up Viewable2D according to information provided by the world class
         /// </summary>
-        /// <param name="_dimensions">Viewable dimensions {X, Y, Z}</param>
-        /// <param name="_currCell">Current cell coordinates in entire maze</param>
-        /// <returns>2D array of integers (the current viewable grid of the maze)</returns>
-        public static int[,] Get2DViewable(int[] _dimensions, int[] _currCell)
+        static public void SetupViewable2D()
         {
+            //viewable2D = Get2DViewable(World.CurrentDimensions, World.CenterCell);
+
+            //TESTING THIS CODE
             //Initialize view array
-            int _viewX = BOUND_SCALE + dimensionInfo[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE),
-                _viewY = BOUND_SCALE + dimensionInfo[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE);
-            int[,] _view = new int[_viewX, _viewY];
+            int _viewX = BOUND_SCALE + dimensionInfo[World.DimensionX] * (BOUND_SCALE + CELL_SCALE),
+                _viewY = BOUND_SCALE + dimensionInfo[World.DimensionY] * (BOUND_SCALE + CELL_SCALE);
+            viewable2D = new int[_viewX, _viewY];
 
             //Find coordinates of cell (0, 0) in current view
             int[] _toWrite = new int[dimensions];
             for (int _d = 0; _d < dimensions; _d++)
             {
-                _toWrite[_d] = _d == _dimensions[X] || _d == _dimensions[Y] ? 0 : _currCell[_d];
+                _toWrite[_d] = _d == World.DimensionX|| _d == World.DimensionY ? 0 : World.CenterCell[_d];
             }
 
             //Fill view array
@@ -340,8 +313,8 @@ namespace MDMazeGeneration
                     int _xID = (_x - BOUND_SCALE) - ((BOUND_SCALE + CELL_SCALE) * (int)Math.Floor((double)(_x - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE))),
                         _yID = (_y - BOUND_SCALE) - ((BOUND_SCALE + CELL_SCALE) * (int)Math.Floor((double)(_y - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)));
                     //Initiate values using IDs
-                    _view[_x, _y] = SetValType(0, _xID >= CELL_SCALE || _yID >= CELL_SCALE);
-                    _view[_x, _y] = SetBound(_view[_x, _y], (_xID >= CELL_SCALE && _yID >= CELL_SCALE) || (_x == 0 || _y == 0));
+                    viewable2D[_x, _y] = SetValType(0, _xID >= CELL_SCALE || _yID >= CELL_SCALE);
+                    viewable2D[_x, _y] = SetBound(viewable2D[_x, _y], !((_xID >= CELL_SCALE && _yID >= CELL_SCALE) || (_x == 0 || _y == 0)));
                 }
             }
 
@@ -351,85 +324,81 @@ namespace MDMazeGeneration
                 for (int _y = BOUND_SCALE; _y < _viewY; _y += BOUND_SCALE + CELL_SCALE)
                 {
                     //Write interior
-                    _view[_x, _y] = SetAscending(_view[_x, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), _dimensions[Z]) == 0);
-                    if (_toWrite[_dimensions[Z]] != 0)
+                    viewable2D[_x, _y] = SetAscending(viewable2D[_x, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), World.DimensionZ) == 0);
+                    if (_toWrite[World.DimensionZ] != 0)
                     {
                         //Get if _toWrite has path form neighbor in negative Z dimension
-                        _toWrite[_dimensions[Z]]--;
-                        _view[_x, _y] = SetDescending(_view[_x, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), _dimensions[Z]) == 0);
-                        _toWrite[_dimensions[Z]]++;
+                        _toWrite[World.DimensionZ]--;
+                        viewable2D[_x, _y] = SetDescending(viewable2D[_x, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), World.DimensionZ) == 0);
+                        _toWrite[World.DimensionZ]++;
                     }
                     else
                     {
-                        _view[_x, _y] = SetDescending(_view[_x, _y], false);
+                        viewable2D[_x, _y] = SetDescending(viewable2D[_x, _y], false);
                     }
 
                     //Write bound on X
-                    _view[_x + CELL_SCALE, _y] = SetBound(_view[_x, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), _dimensions[X]) == 1);
+                    viewable2D[_x + CELL_SCALE, _y] = SetBound(viewable2D[_x + CELL_SCALE, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), World.DimensionX) == 0);
 
                     //Write bound on Y
-                    _view[_x, _y + CELL_SCALE] = SetBound(_view[_x, _y], GetBit((ushort)worldBounds.GetValue(_toWrite), _dimensions[Y]) == 1);
+                    viewable2D[_x, _y + CELL_SCALE] = SetBound(viewable2D[_x, _y + CELL_SCALE], GetBit((ushort)worldBounds.GetValue(_toWrite), World.DimensionY) == 0);
 
                     //Increment Y value of _toWrite
-                    _toWrite[_dimensions[Y]]++;
+                    _toWrite[World.DimensionY]++;
                 }
 
-                //Increment X value of _toWrite
-                _toWrite[_dimensions[Y]] = 0;
-                _toWrite[_dimensions[X]]++;
+                //Increment X value of _toWrite and set Y value to zero
+                _toWrite[World.DimensionY] = 0;
+                _toWrite[World.DimensionX]++;
             }
 
             //Open all outside walls of entrance and exit cells if cells are viewable
             //Check entrance
-            if (IsViewable(entranceCoor, _currCell, _dimensions[X], _dimensions[Y]))
+            if (IsViewable(entranceCoor, World.CenterCell, World.DimensionX, World.DimensionY))
             {
                 //Check and Open X
-                _view[0, BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(_view[0, BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)], !(entranceCoor[_dimensions[X]] == 0));
-                _view[_viewX - 1, BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(_view[_viewX - 1, BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)], !(entranceCoor[_dimensions[X]] == dimensionInfo[_dimensions[X]] - 1));
+                viewable2D[0, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                    SetBound(viewable2D[0, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (entranceCoor[World.DimensionX] == 0));
+                viewable2D[_viewX - 1, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                    SetBound(viewable2D[_viewX - 1, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (entranceCoor[World.DimensionX] == dimensionInfo[World.DimensionX] - 1));
                 //Check and Open Y
-                _view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), 0] =
-                    SetBound(_view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), 0], !(entranceCoor[_dimensions[Y]] == 0));
-                _view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), _viewY - 1] =
-                    SetBound(_view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), _viewY - 1], !(entranceCoor[_dimensions[Y]] == dimensionInfo[_dimensions[Y]] - 1));
+                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0] =
+                    SetBound(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0], (entranceCoor[World.DimensionY] == 0));
+                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1] =
+                    SetBound(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1], (entranceCoor[World.DimensionY] == dimensionInfo[World.DimensionY] - 1));
                 //Check and Open Z
-                _view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetDescending(_view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)],
-                     (entranceCoor[_dimensions[Z]] == 0));
-                _view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetAscending(_view[BOUND_SCALE + entranceCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)],
-                     (entranceCoor[_dimensions[Z]] == dimensionInfo[_dimensions[Z]] - 1));
+                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                     SetDescending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
+                     (entranceCoor[World.DimensionZ] == 0) ||
+                     Descending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
+                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                     SetAscending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
+                     (entranceCoor[World.DimensionZ] == dimensionInfo[World.DimensionZ] - 1) ||
+                     Ascending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
             }
             //Check exit
-            if (IsViewable(exitCoor, _currCell, _dimensions[X], _dimensions[Y]))
+            if (IsViewable(exitCoor, World.CenterCell, World.DimensionX, World.DimensionY))
             {
                 //Check and Open X
-                _view[0, BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(_view[0, BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)], !(exitCoor[_dimensions[X]] == 0));
-                _view[_viewX, BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(_view[_viewX, BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)], !(exitCoor[_dimensions[X]] == dimensionInfo[_dimensions[X]] - 1));
+                viewable2D[0, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                    SetBound(viewable2D[0, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (exitCoor[World.DimensionX] == 0));
+                viewable2D[_viewX - 1, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                    SetBound(viewable2D[_viewX - 1, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (exitCoor[World.DimensionX] == dimensionInfo[World.DimensionX] - 1));
                 //Check and Open Y
-                _view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), 0] =
-                    SetBound(_view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), 0], !(exitCoor[_dimensions[Y]] == 0));
-                _view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), _viewY] =
-                    SetBound(_view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), _viewY], !(exitCoor[_dimensions[Y]] == dimensionInfo[_dimensions[Y]] - 1));
+                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0] =
+                    SetBound(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0], (exitCoor[World.DimensionY] == 0));
+                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1] =
+                    SetBound(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1], (exitCoor[World.DimensionY] == dimensionInfo[World.DimensionY] - 1));
                 //Check and Open Z
-                _view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetDescending(_view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)],
-                     (exitCoor[_dimensions[Z]] == 0));
-                _view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetAscending(_view[BOUND_SCALE + exitCoor[_dimensions[X]] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[_dimensions[Y]] * (BOUND_SCALE + CELL_SCALE)],
-                     (exitCoor[_dimensions[Z]] == dimensionInfo[_dimensions[Z]] - 1));
+                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                     SetDescending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
+                     (exitCoor[World.DimensionZ] == 0) ||
+                     Descending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
+                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
+                     SetAscending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
+                     (exitCoor[World.DimensionZ] == dimensionInfo[World.DimensionZ] - 1) ||
+                     Ascending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
             }
-
-            //Return view array
-            return _view;
-        }
-
-        static public void SetViewable2D()
-        {
-            viewable2D = Get2DViewable(World.CurrentDimensions, World.CenterCell);
         }
 
         /// <summary>
@@ -566,14 +535,15 @@ namespace MDMazeGeneration
             //Find and fill in information
             //Get upper left corner coordinate of cell in drawing
             int[] _cellULCoor = new int[2];
-            _cellULCoor[X] = _bScale + (((_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE * CELL_SCALE)) * (_bScale + _cScale));
-            _cellULCoor[Y] = _bScale + (((_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE * CELL_SCALE)) * (_bScale + _cScale));
+            _cellULCoor[X] = _bScale + ((int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
+            _cellULCoor[Y] = _bScale + ((int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
+
             //If closed bound, one set of information, else two sets of information
             if (ClosedBound(_val))
             {
                 _bInfo = new int[1, 4];
                 //Check if on X
-                if (((_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE * CELL_SCALE)) >= CELL_SCALE)
+                if (((int)Math.Abs(_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
                 {
                     _bInfo[0, X] = _cScale + (_bScale / 2) + _cellULCoor[X];
                     _bInfo[0, 2] = _bScale;
@@ -581,10 +551,10 @@ namespace MDMazeGeneration
                 else
                 {
                     _bInfo[0, X] = (_cScale / 2) + _cellULCoor[X];
-                    _bInfo[0, 2] = _bScale;
+                    _bInfo[0, 2] = _cScale;
                 }
                 //Check if on Y
-                if (((_viewCoor[Y] - BOUND_SCALE) % (BOUND_SCALE * CELL_SCALE)) >= CELL_SCALE)
+                if (((int)Math.Abs(_viewCoor[Y] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
                 {
                     _bInfo[0, Y] = _cScale + (_bScale / 2) + _cellULCoor[Y];
                     _bInfo[0, 3] = _bScale;
@@ -592,26 +562,36 @@ namespace MDMazeGeneration
                 else
                 {
                     _bInfo[0, Y] = (_cScale / 2) + _cellULCoor[Y];
-                    _bInfo[0, 3] = _bScale;
+                    _bInfo[0, 3] = _cScale;
                 }
             }
             else
             {
                 _bInfo = new int[2, 4];
-                int _centerCoor;
+                //Get opening center
+                int[] _centerCoor = FindOpeningCenter(X, true, _currD, _currCell);
+
+                //Start and end points within cell for bounds
+                int[,] _startEndPoints = new int[2, 2];
+                _startEndPoints[0, 0] = 0;
+                _startEndPoints[1, 1] = _cScale;
+
                 //Must be on X or on Y, never a corner
-                if (((_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE * CELL_SCALE)) >= CELL_SCALE)
+                //If on X
+                if (((int)Math.Abs(_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
                 {
                     _bInfo[0, X] = _cScale + (_bScale / 2) + _cellULCoor[X];
                     _bInfo[0, 2] = _bScale;
                     _bInfo[1, X] = _cScale + (_bScale / 2) + _cellULCoor[X];
                     _bInfo[1, 2] = _bScale;
 
-                    _centerCoor = FindOpeningCenter(X, true, _viewCoor, _currD, _currCell, _cScale, _bScale)[Y];
-                    _bInfo[0, Y] = ((_centerCoor - (_bScale / 2)) / 2) + _cellULCoor[Y];
-                    _bInfo[0, 3] = _centerCoor - (_bScale / 2);
-                    _bInfo[1, Y] = ((_cScale + _centerCoor + (_bScale / 2)) / 2) + _cellULCoor[Y];
-                    _bInfo[1, 3] = _cScale - _centerCoor - (_bScale / 2);
+                    _startEndPoints[0, 1] = _centerCoor[Y] - (_oScale / 2);
+                    _startEndPoints[1, 0] = _centerCoor[Y] + (_oScale / 2);
+
+                    _bInfo[0, Y] = ((_startEndPoints[0, 0] + _startEndPoints[0, 1]) / 2) + _cellULCoor[Y];
+                    _bInfo[1, Y] = ((_startEndPoints[1, 0] + _startEndPoints[1, 1]) / 2) + _cellULCoor[Y];
+                    _bInfo[0, 3] = (int)Math.Abs((double)_startEndPoints[0, 0] - _startEndPoints[0, 1]);
+                    _bInfo[1, 3] = (int)Math.Abs((double)_startEndPoints[1, 0] - _startEndPoints[1, 1]);
                 }
                 else
                 {
@@ -620,11 +600,13 @@ namespace MDMazeGeneration
                     _bInfo[1, Y] = _cScale + (_bScale / 2) + _cellULCoor[Y];
                     _bInfo[1, 3] = _bScale;
 
-                    _centerCoor = FindOpeningCenter(Y, true, _viewCoor, _currD, _currCell, _cScale, _bScale)[X];
-                    _bInfo[0, X] = ((_centerCoor - (_bScale / 2)) / 2) + _cellULCoor[X];
-                    _bInfo[0, 2] = _centerCoor - (_bScale / 2);
-                    _bInfo[1, X] = ((_cScale + _centerCoor + (_bScale / 2)) / 2) + _cellULCoor[X];
-                    _bInfo[1, 2] = _cScale - _centerCoor - (_bScale / 2);
+                    _startEndPoints[0, 1] = _centerCoor[X] - (_oScale / 2);
+                    _startEndPoints[1, 0] = _centerCoor[X] + (_oScale / 2);
+
+                    _bInfo[0, X] = ((_startEndPoints[0, 0] + _startEndPoints[0, 1]) / 2) + _cellULCoor[X];
+                    _bInfo[1, X] = ((_startEndPoints[1, 0] + _startEndPoints[1, 1]) / 2) + _cellULCoor[X];
+                    _bInfo[0, 2] = (int)Math.Abs((double)_startEndPoints[0, 0] - _startEndPoints[0, 1]);
+                    _bInfo[1, 2] = (int)Math.Abs((double)_startEndPoints[1, 0] - _startEndPoints[1, 1]);
                 }
             }
 
@@ -647,7 +629,94 @@ namespace MDMazeGeneration
         /// <returns>A 2D array with information about the bound represented by the given value, if value given does not represent a bound, an empty 2D array</returns>
         public static int[,] GetBoundInfo(int[] _viewCoor, int _val)
         {
-            return GetBoundInfo(_viewCoor, World.CenterCell, World.CurrentDimensions, _val, World.InteriorScale, World.BoundScale, World.OpeningScale);
+            //return GetBoundInfo(_viewCoor, GetCurrentCell(_viewCoor), World.CurrentDimensions, _val, World.InteriorScale, World.BoundScale, World.OpeningScale);
+
+            //If not a bound value, return an empty array
+            if (!IsBound(_val))
+                return new int[0, 0];
+
+            int[,] _bInfo;
+
+            //Find and fill in information
+            //Get upper left corner coordinate of cell in drawing
+            int[] _cellULCoor = new int[2];
+            _cellULCoor[X] = World.BoundScale + ((int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (World.BoundScale + World.InteriorScale));
+            _cellULCoor[Y] = World.BoundScale + ((int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (World.BoundScale + World.InteriorScale));
+
+            //If closed bound, one set of information, else two sets of information
+            if (ClosedBound(_val))
+            {
+                _bInfo = new int[1, 4];
+                //Check if on X
+                if (((int)Math.Abs(_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
+                {
+                    _bInfo[0, X] = World.InteriorScale + (World.BoundScale / 2) + _cellULCoor[X];
+                    _bInfo[0, 2] = World.BoundScale;
+                }
+                else
+                {
+                    _bInfo[0, X] = (World.InteriorScale / 2) + _cellULCoor[X];
+                    _bInfo[0, 2] = World.InteriorScale;
+                }
+                //Check if on Y
+                if (((int)Math.Abs(_viewCoor[Y] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
+                {
+                    _bInfo[0, Y] = World.InteriorScale + (World.BoundScale / 2) + _cellULCoor[Y];
+                    _bInfo[0, 3] = World.BoundScale;
+                }
+                else
+                {
+                    _bInfo[0, Y] = (World.InteriorScale / 2) + _cellULCoor[Y];
+                    _bInfo[0, 3] = World.InteriorScale;
+                }
+            }
+            else
+            {
+                _bInfo = new int[2, 4];
+                //Get opening center
+                int[] _centerCoor = FindOpeningCenter(X, true, World.CurrentDimensions, GetCurrentCell(_viewCoor));
+
+                //Start and end points within cell for bounds
+                int[,] _startEndPoints = new int[2, 2];
+                _startEndPoints[0, 0] = 0;
+                _startEndPoints[1, 1] = World.InteriorScale;
+
+                //Must be on X or on Y, never a corner
+                //If on X
+                if (((int)Math.Abs(_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
+                {
+                    _bInfo[0, X] = World.InteriorScale + (World.BoundScale / 2) + _cellULCoor[X];
+                    _bInfo[0, 2] = World.BoundScale;
+                    _bInfo[1, X] = World.InteriorScale + (World.BoundScale / 2) + _cellULCoor[X];
+                    _bInfo[1, 2] = World.BoundScale;
+
+                    _startEndPoints[0, 1] = _centerCoor[Y] - (World.OpeningScale / 2);
+                    _startEndPoints[1, 0] = _centerCoor[Y] + (World.OpeningScale / 2);
+
+                    _bInfo[0, Y] = ((_startEndPoints[0, 0] + _startEndPoints[0, 1]) / 2) + _cellULCoor[Y];
+                    _bInfo[1, Y] = ((_startEndPoints[1, 0] + _startEndPoints[1, 1]) / 2) + _cellULCoor[Y];
+                    _bInfo[0, 3] = (int)Math.Abs((double)_startEndPoints[0, 0] - _startEndPoints[0, 1]);
+                    _bInfo[1, 3] = (int)Math.Abs((double)_startEndPoints[1, 0] - _startEndPoints[1, 1]);
+                }
+                else
+                {
+                    _bInfo[0, Y] = World.InteriorScale + (World.BoundScale / 2) + _cellULCoor[Y];
+                    _bInfo[0, 3] = World.BoundScale;
+                    _bInfo[1, Y] = World.InteriorScale + (World.BoundScale / 2) + _cellULCoor[Y];
+                    _bInfo[1, 3] = World.BoundScale;
+
+                    _startEndPoints[0, 1] = _centerCoor[X] - (World.OpeningScale / 2);
+                    _startEndPoints[1, 0] = _centerCoor[X] + (World.OpeningScale / 2);
+
+                    _bInfo[0, X] = ((_startEndPoints[0, 0] + _startEndPoints[0, 1]) / 2) + _cellULCoor[X];
+                    _bInfo[1, X] = ((_startEndPoints[1, 0] + _startEndPoints[1, 1]) / 2) + _cellULCoor[X];
+                    _bInfo[0, 2] = (int)Math.Abs((double)_startEndPoints[0, 0] - _startEndPoints[0, 1]);
+                    _bInfo[1, 2] = (int)Math.Abs((double)_startEndPoints[1, 0] - _startEndPoints[1, 1]);
+                }
+            }
+
+            //Return information
+            return _bInfo;
         }
 
         /// <summary>
@@ -678,16 +747,19 @@ namespace MDMazeGeneration
 
             //Create iInfo
             int[,] _iInfo = new int[2, 4];
+            for (int _i = 0; _i < _iInfo.GetLength(0); _i++)
+                for (int _j = 0; _j < _iInfo.GetLength(1); _j++)
+                    _iInfo[_i, _j] = -1;
 
             //Find and fill in information
             //Get upper left corner coordinate of cell in drawing
             int[] _cellULCoor = new int[2];
-            _cellULCoor[X] = _bScale + (((_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE * CELL_SCALE)) * (_bScale + _cScale));
-            _cellULCoor[Y] = _bScale + (((_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE * CELL_SCALE)) * (_bScale + _cScale));
+            _cellULCoor[X] = _bScale + ((int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
+            _cellULCoor[Y] = _bScale + ((int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
             //If ascending
             if (Ascending(_val))
             {
-                int[] _openingC = FindOpeningCenter(Z, true, _viewCoor, _currD, _currCell, _cScale, _bScale);
+                int[] _openingC = FindOpeningCenter(Z, true, _currD, _currCell);
                 _iInfo[0, X] = _openingC[X] + _cellULCoor[X];
                 _iInfo[0, Y] = _openingC[Y] + _cellULCoor[Y];
                 _iInfo[0, 2] = _oScale;
@@ -696,12 +768,26 @@ namespace MDMazeGeneration
             //If descending
             if (Descending(_val))
             {
-                int[] _openingC = FindOpeningCenter(Z, false, _viewCoor, _currD, _currCell, _cScale, _bScale);
-                _iInfo[0, X] = _openingC[X] + _cellULCoor[X];
-                _iInfo[0, Y] = _openingC[Y] + _cellULCoor[Y];
-                _iInfo[0, 2] = _oScale;
-                _iInfo[0, 3] = _oScale;
+                int[] _openingC = FindOpeningCenter(Z, false, _currD, _currCell);
+                _iInfo[1, X] = _openingC[X] + _cellULCoor[X];
+                _iInfo[1, Y] = _openingC[Y] + _cellULCoor[Y];
+                _iInfo[1, 2] = _oScale;
+                _iInfo[1, 3] = _oScale;
             }
+
+            if (((_iInfo[0, X] - _cellULCoor[X] < _oScale / 2 ||
+                _iInfo[0, X] - _cellULCoor[X] > _cScale - (_oScale / 2)) &&
+                 _iInfo[0, X] != -1) ||
+                ((_iInfo[0, Y] - _cellULCoor[Y] < _oScale / 2 ||
+                _iInfo[0, Y] - _cellULCoor[Y] > _cScale - (_oScale / 2)) &&
+                 _iInfo[0, Y] != -1) ||
+                ((_iInfo[1, X] - _cellULCoor[X] < _oScale / 2 ||
+                _iInfo[1, X] - _cellULCoor[X] > _cScale - (_oScale / 2)) &&
+                 _iInfo[1, X] != -1) ||
+                ((_iInfo[1, Y] - _cellULCoor[Y] < _oScale / 2 ||
+                _iInfo[1, Y] - _cellULCoor[Y] > _cScale - (_oScale / 2)) &&
+                 _iInfo[1, Y] != -1))
+                Console.ReadLine();
 
             //Return information
             return _iInfo;
@@ -720,16 +806,76 @@ namespace MDMazeGeneration
         /// VALUES ENTERED AND RETURNED SHOULD BE IN TERMS OF PLAYER SCALE
         /// </summary>
         /// <param name="_viewCoor">The coordinates of the value in the viewable grid (as of right now should only be two)</param>
-        /// <param name="_currCell">A current cell displayed in the veiwable grid</param>
-        /// <param name="_currD">The current dimensions the viewable grid is showing</param>
         /// <param name="_val">The value</param>
-        /// <param name="_cScale">The desired scale of the cell interior</param>
-        /// <param name="_bScale">The desired scale of bounds</param>
-        /// <param name="_oScale">The desired scale of opening</param>
         /// <returns>A 2D array with information about the interior represented by the given value, if value given does not represent cell interior, an empty 2D array</returns>
         public static int[,] GetInteriorInfo(int[] _viewCoor, int _val)
         {
-            return GetInteriorInfo(_viewCoor, World.CenterCell, World.CurrentDimensions, _val, World.InteriorScale, World.BoundScale, World.OpeningScale);
+            //return GetInteriorInfo(_viewCoor, GetCurrentCell(_viewCoor), World.CurrentDimensions, _val, World.InteriorScale, World.BoundScale, World.OpeningScale);
+
+            //If not a bound value, return an empty array
+            if (!IsInterior(_val))
+                return new int[0, 0];
+
+            //Create iInfo
+            int[,] _iInfo = new int[2, 4];
+            for (int _i = 0; _i < _iInfo.GetLength(0); _i++)
+                for (int _j = 0; _j < _iInfo.GetLength(1); _j++)
+                    _iInfo[_i, _j] = -1;
+
+            //Find and fill in information
+            //Get upper left corner coordinate of cell in drawing
+            int[] _cellULCoor = new int[2];
+            _cellULCoor[X] = World.BoundScale + ((int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (World.BoundScale + World.InteriorScale));
+            _cellULCoor[Y] = World.BoundScale + ((int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (World.BoundScale + World.InteriorScale));
+            //If ascending
+            if (Ascending(_val))
+            {
+                int[] _openingC = FindOpeningCenter(Z, true, World.CurrentDimensions, GetCurrentCell(_viewCoor));
+                _iInfo[0, X] = _openingC[X] + _cellULCoor[X];
+                _iInfo[0, Y] = _openingC[Y] + _cellULCoor[Y];
+                _iInfo[0, 2] = World.OpeningScale;
+                _iInfo[0, 3] = World.OpeningScale;
+            }
+            //If descending
+            if (Descending(_val))
+            {
+                int[] _openingC = FindOpeningCenter(Z, false, World.CurrentDimensions, GetCurrentCell(_viewCoor));
+                _iInfo[1, X] = _openingC[X] + _cellULCoor[X];
+                _iInfo[1, Y] = _openingC[Y] + _cellULCoor[Y];
+                _iInfo[1, 2] = World.OpeningScale;
+                _iInfo[1, 3] = World.OpeningScale;
+            }
+
+            if (((_iInfo[0, X] - _cellULCoor[X] < World.OpeningScale / 2 ||
+                _iInfo[0, X] - _cellULCoor[X] > World.InteriorScale - (World.OpeningScale / 2)) &&
+                 _iInfo[0, X] != -1) ||
+                ((_iInfo[0, Y] - _cellULCoor[Y] < World.OpeningScale / 2 ||
+                _iInfo[0, Y] - _cellULCoor[Y] > World.InteriorScale - (World.OpeningScale / 2)) &&
+                 _iInfo[0, Y] != -1) ||
+                ((_iInfo[1, X] - _cellULCoor[X] < World.OpeningScale / 2 ||
+                _iInfo[1, X] - _cellULCoor[X] > World.InteriorScale - (World.OpeningScale / 2)) &&
+                 _iInfo[1, X] != -1) ||
+                ((_iInfo[1, Y] - _cellULCoor[Y] < World.OpeningScale / 2 ||
+                _iInfo[1, Y] - _cellULCoor[Y] > World.InteriorScale - (World.OpeningScale / 2)) &&
+                 _iInfo[1, Y] != -1))
+                Console.ReadLine();
+
+            //Return information
+            return _iInfo;
+        }
+
+        /// <summary>
+        /// Gets the current cell based on viewable coordinates
+        /// </summary>
+        /// <param name="_viewCoor">Viewable coordinates [X, Y]</param>
+        /// <returns>Coordinates of current cell in maze</returns>
+        public static int[] GetCurrentCell(int[] _viewCoor)
+        {
+            int[] _currCell = new int[dimensions];
+            Array.Copy(World.CenterCell, _currCell, dimensions);
+            _currCell[World.DimensionX] = (int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE));
+            _currCell[World.DimensionY] = (int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE));
+            return _currCell;
         }
 
         /// <summary>
@@ -743,52 +889,24 @@ namespace MDMazeGeneration
         /// <param name="_cScale">The scale of the cell interior</param>
         /// <param name="_bScale">The scale of bounds</param>
         /// <returns>The center point of an opening within its cell</returns>
-        static int[] FindOpeningCenter(int _openingD, bool _forwards, int[] _viewCoor, int[] _currD, int[] _currCell, int _cScale, int _bScale)
+        static int[] FindOpeningCenter(int _openingD, bool _forwards, int[] _currD, int[] _currCell)
         {
             //Creater center
             int[] _center = new int[2];
 
-            //Find center
-            //Get cell coordinates
-            int[] _cellCoor = new int[3];
-            _cellCoor[X] = (_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE * CELL_SCALE);
-            _cellCoor[Y] = (_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE * CELL_SCALE);
-            _cellCoor[Z] = _currCell[_currD[Z]];
-            if (!_forwards)
-                _cellCoor[_openingD]--;
-
             //Get constants
-            int[] _constants = new int[2];
+            int[] _constants = new int[] { 0, 0 };
             for (int _i = 0; _i < dimensions; _i++)
             {
                 if (_i < _currD[_openingD])
-                    if (_i == _currD[X])
-                        _constants[X] += _cellCoor[X];
-                    else
-                        if (_i == _currD[Y])
-                            _constants[X] += _cellCoor[Y];
-                        else
-                            _constants[X] += _currCell[_i];
+                    _constants[X] += _currCell[_i];
                 if (_i > _currD[_openingD])
-                    if (_i == _currD[X])
-                        _constants[Y] += _cellCoor[X];
-                    else
-                        if (_i == _currD[Y])
-                            _constants[Y] += _cellCoor[Y];
-                        else
-                            _constants[Y] += _currCell[_i];
+                    _constants[Y] += _currCell[_i];
             }
-
-            //Get section values
-            int[] _sections = new int[2];
-            _sections[X] = (_cellCoor[_openingD] - 1) % 4 == 0 ? 0 : (_cellCoor[_openingD] - 1) % 8 > 4 ? (((((_cellCoor[_openingD] - 1) % 8) + 1) % 2) + 1) : ((((_cellCoor[_openingD] - 1) % 8) % 2) + 1);
-            _sections[Y] = (_cellCoor[_openingD] - 3) % 4 == 0 ? 0 : (_cellCoor[_openingD] - 3) % 8 > 4 ? (((((_cellCoor[_openingD] - 3) % 8) + 1) % 2) + 1) : ((((_cellCoor[_openingD] - 3) % 8) % 2) + 1);
-
-            //Get center
-            _center[X] = (int)(Math.Floor((double)((_constants[X] * _cellCoor[_openingD]) + _cellCoor[_openingD]) % Math.Floor((double)(_cScale / (_sections[X] == 0 ? 1 : 2) + 1 - _bScale)) + (_bScale / 2))
-                + Math.Ceiling((double)(_sections[X] == 0 ? 0 : _sections[X] - 1) * _cScale / 2));
-            _center[Y] = (int)(Math.Floor((double)((_constants[Y] * _cellCoor[_openingD]) + _cellCoor[_openingD]) % Math.Floor((double)(_cScale / (_sections[Y] == 0 ? 1 : 2) + 1 - _bScale)) + (_bScale / 2))
-                + Math.Ceiling((double)(_sections[Y] == 0 ? 0 : _sections[Y] - 1) * _cScale / 2));
+            
+            //Get center points
+            _center[X] = Randomize.OpeningCoor(_constants[X], _currCell[_currD[_openingD]] - (_forwards ? 0 : 1), 1, World.InteriorScale, World.OpeningScale);
+            _center[Y] = Randomize.OpeningCoor(_constants[Y], _currCell[_currD[_openingD]] - (_forwards ? 0 : 1), 3, World.InteriorScale, World.OpeningScale);
 
             //Return center
             return _center;
@@ -880,9 +998,7 @@ namespace MDMazeGeneration
                 InitiateStorage();
                 NewSet();
 
-                //Console.WriteLine("New cell {0}", ToString());
-                Maze.cellsCreated++;
-                //PrintCellInfo();
+                Console.WriteLine("New cell: {0}", this.ToString());
             }
 
             /// <summary>
@@ -890,7 +1006,7 @@ namespace MDMazeGeneration
             /// </summary>
             protected void InitiateStorage()
             {
-                bounds = 0;
+                bounds = ushort.MaxValue;
             }
 
             /// <summary>
@@ -924,10 +1040,6 @@ namespace MDMazeGeneration
             /// <returns>Neighboring cell</returns>
             internal Cell GetNeighbor(int _d)
             {
-                //DEBUGGING
-                //Console.WriteLine("{0} GetNeighbor({1})", ToString(), _d);
-                //Maze.PrintCellInfo();
-
                 if (neighbors[_d] == null)
                 {
                     //Get neighbor coordinates
@@ -964,23 +1076,6 @@ namespace MDMazeGeneration
                 }
                 return neighbors[_d];
             }
-
-            /*/// <summary>
-            /// Returns if a cell should have a path into the current layer of last dimension or not.
-            /// </summary>
-            /// <param name="_currLayer">Integer specifing the current layer</param>
-            /// <returns>True if set is to have a path into the current layer of the next dimension</returns>
-            protected bool PathToLastDimension(int _currLayer)
-            {
-                //Get the first (and greatest) cell in the set
-                Cell _setParent = this;
-                while (_setParent.parent != null)
-                {
-                    _setParent = _setParent.parent;
-                }
-
-                return (Randomize.RandBool() || ((CompareTo(_setParent) == 0) && !(_setParent.coordinates[0] == _currLayer)));
-            }*/
 
             /// <summary>
             /// Writes the cell's path information to the actual maze arrays
@@ -1110,7 +1205,7 @@ namespace MDMazeGeneration
                 //Console.WriteLine("Set {0} << Set {1}", sets.IndexOf(_new), sets.IndexOf(_first));
 
                 //While _first is not part of new set, add cells from current set to new set.
-                while (!_first.SameSet(_newSet))
+                while (!_first.SameSet(_new))
                 {
                     Cell _toAdd = _first.GetLastInSet();
                     _new.AddCellToSet(_toAdd);

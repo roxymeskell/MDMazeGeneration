@@ -215,5 +215,41 @@ namespace MDMazeGeneration
             //return coordinate values for opening
             return _openingCoor;
         }
+
+        /// <summary>
+        /// Generates a 'random' center point coordinate in a cell based on given values
+        /// </summary>
+        /// <param name="_constant">Given constant from cell</param>
+        /// <param name="_var">Variable</param>
+        /// <param name="_modI">Mod</param>
+        /// <param name="_iScale">Interior cell scale</param>
+        /// <param name="_oScale">Opening scale, or the width of whatever the center point is being generated for</param>
+        /// <returns>'Random' center point coordinate in cell</returns>
+        public static int OpeningCoor(int _constant, int _var, int _modI, int _iScale, int _oScale)
+        {
+            //modI is 1 for X, 3 for Y
+
+            //Get section value
+            int _section;
+            _section = (_var - _modI) % 4 == 0 ? 0 : Math.Abs((_var - _modI) % 8) > 4 ? (((Math.Abs(_var - _modI) % 8) + 1) % 2) + 1 : (((Math.Abs(_var - _modI) % 8) % 2) + 1);
+
+            //Get center coordinate
+
+            //Get scale of possible centers
+            //Section: 0 - both     1 - first half      2 - second half
+            int _scale = (_iScale / (_section == 0 ? 1 : 2)) - _oScale + 1;
+
+            //Get amount to add back
+            int _addBack = (int)Math.Ceiling((double)((_iScale / 2) * (_section == 0 ? 0 : _section - 1)) + (_oScale / 2));
+
+            //Get 'random' value within scale
+            int _random = (int)Math.Abs(Math.Floor((double)(((_constant * _var) + _var) % _scale)));
+
+            //Add _addBack to _random to get _coor
+            int _coor = _random + _addBack;
+
+            //return coordinate
+            return _coor;
+        }
     }
 }
