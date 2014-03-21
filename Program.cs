@@ -11,7 +11,7 @@ namespace MDMazeGeneration
     {
         static void Main(string[] args)
         {
-            Console.BufferWidth = 80;
+            /*Console.BufferWidth = 80;
             Console.BufferHeight = 50;
             Console.WindowWidth = 80;
             Console.WindowHeight = 50;
@@ -56,21 +56,48 @@ namespace MDMazeGeneration
             Console.WriteLine();
             Console.WriteLine("Cell count: {0}", currentCells);
             Console.WriteLine("Maze initialization - {0} milliseconds\nGeneration Speed: {1} cells per millisecond", stopwatch.ElapsedMilliseconds, (double)currentCells / stopwatch.ElapsedMilliseconds);
-            Console.ReadLine();*/
+            Console.ReadLine();
 
             World.Initialize(interiorScale, boundScale, openingScale);
 
             ConsoleKey input;
 
+            string s = "ooo";
+            int lines = (s.Split(new char[] { '\n' })).Length;*/
+
+
+            Console.Title = "Multidimensional Maze Generation";
             do
             {
-                Thread.Sleep(15);
+                Console.Clear();
+                Start();
+            } while (Reset());
+        }
 
-                World.PrintWorld();
+        /// <summary>
+        /// Method to get values and initialize Maze
+        /// </summary>
+        static void Start()
+        {
+            Initializer.SetupMaze();
 
-                input = Console.ReadKey(true).Key;
-                
-            } while (Player.Input(input));
+            //Clear console
+            Console.Clear();
+            //Run
+            Runner.Run();
+        }
+
+        
+        
+        /// <summary>
+        /// Method to check if player wants to reset maze once finishing it
+        /// </summary>
+        /// <returns>True of false whether or not to reset maze</returns>
+        static bool Reset()
+        {
+            Console.WriteLine("Would you like to play again (Y/N)?");
+            char input = Console.ReadKey().KeyChar;
+            return (input == 'y');
         }
     }
 }

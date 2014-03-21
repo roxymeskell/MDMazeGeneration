@@ -6,12 +6,34 @@ using System.Threading;
 
 namespace MDMazeGeneration
 {
+    /// <summary>
+    /// An enum define the next movement to be made by the player
+    /// </summary>
+    enum Movement
+    {
+        None, NegX, PosX, NegY, PosY, NegZ, PosZ
+    }
+
+    /// <summary>
+    /// A static class keeping track of the player's position and movents
+    /// </summary>
     static class Player
     {
-        static readonly int X = 0, Y = 1, Z = 2;
-        static int[] cellCoor2D, currCell;
-        public static bool CanSwitchDimensions { get { return CoorInCell[X] > 0 && CoorInCell[X] < World.InteriorScale && CoorInCell[Y] > 0 && CoorInCell[Y] < World.InteriorScale; } }
+        static readonly int X = 0, Y = 1, Z = 2; // Some constants defined for the sake of less headache
+
+        static int[] cellCoor2D, currCell; // Stores values for player
+
+        /// <summary>
+        /// A boolean value representing if it is safe to shift dimensions
+        /// </summary>
+        public static bool CanSwitchDimensions { get { return CoorInCell[X] > 0 && CoorInCell[X] <= World.InteriorScale && CoorInCell[Y] > 0 && CoorInCell[Y] <= World.InteriorScale; } }
+        /// <summary>
+        /// The 2D coordinates of where on the viewable gird the player currently is
+        /// </summary>
         public static int[] CoorOnGrid { get { return new int[] { CoorInCell[X] + (CurrentCell[World.DimensionX] * World.CellScale), CoorInCell[Y] + (CurrentCell[World.DimensionY] * World.CellScale) }; } }
+        /// <summary>
+        /// The 2D corrdinates of where in a cell the player is
+        /// </summary>
         public static int[] CoorInCell
         {
             get
@@ -31,6 +53,9 @@ namespace MDMazeGeneration
                 cellCoor2D[Y] = (value[Y] % World.CellScale) + (value[Y] % World.CellScale < 0 ? World.CellScale : 0);
             }
         }
+        /// <summary>
+        /// The cell coordinates the player is currently in
+        /// </summary>
         public static int[] CurrentCell
         {
             get
@@ -47,6 +72,9 @@ namespace MDMazeGeneration
                     currCell[_d] = value[_d] < 0 ? 0 : (value[_d] < Maze.DimensionInfo[_d] ? value[_d] : (Maze.DimensionInfo[_d] - 1));
             }
         }
+        /// <summary>
+        /// The X position of the player on the viewable grid
+        /// </summary>
         public static int PlayerX
         {
             get { return CoorOnGrid[X]; }
@@ -62,6 +90,9 @@ namespace MDMazeGeneration
                     CoorInCell[X] = _inCellVal;
                 }
         }
+        /// <summary>
+        /// The Y position of the player on the viewable grid
+        /// </summary>
         public static int PlayerY
         {
             get { return CoorOnGrid[Y]; }
@@ -77,6 +108,9 @@ namespace MDMazeGeneration
                 CoorInCell[Y] = _inCellVal;
             }
         }
+        /// <summary>
+        /// The position of the player in the current Z dimension
+        /// </summary>
         public static int PlayerZ
         {
             get { return CurrentCell[World.DimensionZ]; }
@@ -150,6 +184,20 @@ namespace MDMazeGeneration
         public static bool PositionChanged { get { return pChanged; } set { pChanged = value; } }
         static bool zChanged;
         public static bool ZChanged { get { return zChanged; } set { zChanged = value; } }
+
+        /// <summary>
+        /// Boolean value specifiying if the player has won
+        /// </summary>
+        public static bool HasWon
+        {
+            get
+            {
+                for (int _d = 0; _d < Maze.Dimensions; _d++)
+                    if (CurrentCell[_d] != Maze.Exit[_d])
+                        return false;
+                return true;
+            }
+        }
 
         public static bool Input()
         {
