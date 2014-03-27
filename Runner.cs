@@ -63,7 +63,11 @@ namespace MDMazeGeneration
             }
         }
         public static string Controls { get { return controls; } }
+<<<<<<< HEAD
         public static string Information { get { return CellInfo + "\n\n" + CurrDimensionInfo + "\n\n" + VisableMap + "\n\n" + Controls; } }
+=======
+        public static string Information { get { return CellInfo + "\n" + CurrDimensionInfo + "\n" + VisableMap + "\n" + Controls; } }
+>>>>>>> 202df96dd0d1c31fc5e15bb9161b75da6f4cadf3
         public static int InfoWidth { get { return Information.Split(new char[] { '\n' }).Max(s => s.Length); } }
         public static int InfoHeight { get { return Information.Split(new char[] { '\n' }).Length; } }
         public static int InfoLeft { get { return World.WorldScale + 1; } }
