@@ -44,10 +44,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Maze.cs" />
+    <Compile Include="Initializer.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Randomize.cs" />
+    <Compile Include="Runner.cs" />
     <Compile Include="World.cs" />
   </ItemGroup>
   <ItemGroup>

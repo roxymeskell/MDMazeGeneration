@@ -8,8 +8,15 @@ namespace MDMazeGeneration
     static class World
     {
         static readonly int X = 0, Y = 1, Z = 2;
-        public static readonly char Bound = 'B', Ascending = 'A', Descending = 'D', PlayerMarker = 'X';
+        public static readonly char Floor = ' ', Bound = 'B', Ascending = '+', Descending = '-', PlayerMarker = 'X';
         static readonly int MIN_INTERIOR_SCALE = 3, MIN_BOUND_SCALE = 1, MIN_PLAYER_SCALE = 1;
+        static readonly ConsoleColor PLAYER_FG_COLOR = ConsoleColor.Black;
+        static readonly ConsoleColor PLAYER_BG_COLOR = ConsoleColor.White;
+        static readonly ConsoleColor[] COLORS = new ConsoleColor[] { ConsoleColor.Black, ConsoleColor.Blue, ConsoleColor.Cyan, ConsoleColor.DarkBlue,
+                                                                     ConsoleColor.DarkCyan, ConsoleColor.DarkGray, ConsoleColor.DarkGreen, ConsoleColor.DarkMagenta,
+                                                                     ConsoleColor.DarkRed, ConsoleColor.DarkYellow, ConsoleColor.Gray, ConsoleColor.Green,
+                                                                     ConsoleColor.Magenta, ConsoleColor.Red, ConsoleColor.White, ConsoleColor.Yellow };
+
         static int? playerScale, interiorScale, boundScale, openingScale;
         static int[] currDimensions;
         static char[,] view;
@@ -126,6 +133,31 @@ namespace MDMazeGeneration
         public static int BufferHeight { get { return 1 + ((ControlsBufferY + ControlBufferLines) > WorldScale ? (ControlsBufferY + ControlBufferLines) : WorldScale); } }
         public static int BufferWidth { get { return 8 + (WorldScale + (MapTitle.Length + 1 < Maze.Viewable2D.GetLength(X) + 1 ? Maze.Viewable2D.GetLength(X) + 1 : (MapTitle.Length + 1 < (Maze.Dimensions * 3) + 2 ? (Maze.Dimensions * 4) + 2 : MapTitle.Length + 1))); } }
 
+        /// <summary>
+        /// Initializes maze and world
+        /// </summary>
+        /// <param name="_dInfo">Dimensions information</param>
+        /// <param name="_interiorScale">Interior scale</param>
+        /// <param name="_boundScale">Bound scale</param>
+        /// <param name="_openingScale">Opening scale</param>
+        public static void Initialize(int[] _dInfo, int _interiorScale, int _boundScale, int _openingScale)
+        {
+            Maze.Initialize(_dInfo);
+
+            PlayerScale = 1;
+            InteriorScale = _interiorScale;
+            BoundScale = _boundScale;
+            OpeningScale = _openingScale;
+
+            Update();
+        }
+
+        /// <summary>
+        /// Initializes world
+        /// </summary>
+        /// <param name="_interiorScale">Interior scale</param>
+        /// <param name="_boundScale">Bound scale</param>
+        /// <param name="_openingScale">Opening scale</param>
         public static void Initialize(int _interiorScale, int _boundScale, int _openingScale)
         {
             PlayerScale = 1;
@@ -136,6 +168,9 @@ namespace MDMazeGeneration
             Update();
         }
 
+        /// <summary>
+        /// Sets up the map that can be viewed
+        /// </summary>
         public static void SetupMap()
         {
             if (Player.ZChanged)
@@ -150,7 +185,7 @@ namespace MDMazeGeneration
             {
                 for (int _charY = 0; _charY < _charMaze.GetLength(1); _charY++)
                 {
-                    _charMaze[_charX, _charY] = ' ';
+                    _charMaze[_charX, _charY] = Floor;
                 }
             }
 
@@ -212,21 +247,11 @@ namespace MDMazeGeneration
             view = _charMaze;
         }
 
-        public static void PrintWorld()
+        /// <summary>
+        /// Draws world to console
+        /// </summary>
+        public static void Draw()
         {
-            if (!Player.PositionChanged)
-                return;
-
-            Console.Clear();
-            Player.PositionChanged = false;
-
-            Console.WindowWidth = BufferWidth % 200;
-            Console.WindowHeight = BufferHeight % 70;
-            Console.BufferWidth = BufferWidth;
-            Console.BufferHeight = BufferHeight;
-            //Console.SetWindowSize(BufferWidth % 200, BufferHeight % 70);
-            //Console.SetBufferSize(BufferWidth, BufferHeight);
-
             int _startX, _endX, _startY, _endY;
             _startX = (CenterCell[DimensionX] - 1) * CellScale;
             _startX = _startX < 0 ? 0 : _startX;
@@ -254,179 +279,49 @@ namespace MDMazeGeneration
                     Console.SetCursorPosition(_x - _startX, _y - _startY);
 
                     if (_x == Player.PlayerX && _y == Player.PlayerY)
-                        Console.Write(PlayerMarker);
-                    else
-                        Console.Write(View[_x, _y]);
-                }
-            }
-
-            Console.SetCursorPosition(0, WorldScale);
-
-            PrintCellInfo();
-            PrintCurrDimensions();
-            PrintMap();
-        }
-
-        public static void PrintCellInfo()
-        {
-            bool _entrance = true, _exit = true;
-
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-            {
-                _entrance = Player.CurrentCell[_d] == Maze.Entrance[_d] && _entrance;
-                _exit = Player.CurrentCell[_d] == Maze.Exit[_d] && _exit;
-            }
-
-            if (_entrance || _exit)
-            {
-                Console.SetCursorPosition(WorldScale + 1, InfoBufferY);
-                Console.Write("{0}", _entrance ? "Entrance" : "Exit");
-            }
-
-            Console.SetCursorPosition(WorldScale + 1, InfoBufferY + 1);
-            Console.Write("[{0}", CenterCell[0]);
-            for (int _d = 1; _d < Maze.Dimensions - 1; _d++)
-                Console.Write(", {0}", CenterCell[_d]);
-            Console.Write(", {0}]", CenterCell[Maze.Dimensions - 1]);
-
-            Console.SetCursorPosition(0, WorldScale);
-        }
-
-        public static void PrintCurrDimensions()
-        {
-            Console.SetCursorPosition(WorldScale + 1, DInfoBufferY);
-            Console.Write("Current Dimensions:");
-            Console.SetCursorPosition(WorldScale + 1, DInfoBufferY + 1);
-            Console.Write("\tX: {0}\tY: {1}\tZ: {2}", DimensionX, DimensionY, DimensionZ);
-            Console.SetCursorPosition(0, WorldScale);
-        }
-
-        public static void PrintMap()
-        {
-            Console.SetCursorPosition(WorldScale + 1, MapBufferY);
-            Console.Write(MapTitle);
-
-            for (int _y = 0; _y < Maze.Viewable2D.GetLength(1); _y++)
-            {
-                for (int _x = 0; _x < Maze.Viewable2D.GetLength(0); _x++)
-                {
-                    Console.SetCursorPosition(WorldScale + 2 + _x, MapBufferY + 1 + _y);
-                    switch (Maze.Viewable2D[_x, _y])
                     {
-                        case 3:
-                            Console.Write('#');
-                            break;
-                        case 2:
-                            Console.Write('/');
-                            break;
-                        case 4:
-                            Console.Write('0');
-                            break;
-                        case 6:
-                            Console.Write('%');
-                            break;
-                        default:
-                            Console.Write(' ');
-                            break;
-
+                        Console.ForegroundColor = PLAYER_FG_COLOR;
+                        Console.BackgroundColor = PLAYER_BG_COLOR;
+                        Console.Write(PlayerMarker);
+                    }
+                    else
+                    {
+                        switch (View[_x, _y])
+                        {
+                            case ' ':
+                                Console.ForegroundColor = COLORS[DimensionX];
+                                Console.BackgroundColor = COLORS[DimensionX];
+                                break;
+                            case 'B':
+                                Console.ForegroundColor = COLORS[DimensionY];
+                                Console.BackgroundColor = COLORS[DimensionY];
+                                break;
+                            case '+':
+                                Console.ForegroundColor = COLORS[(DimensionZ + 1) % Maze.Dimensions];
+                                Console.BackgroundColor = COLORS[DimensionZ];
+                                break;
+                            case '-':
+                                Console.ForegroundColor = COLORS[(DimensionZ + 1) % Maze.Dimensions];
+                                Console.BackgroundColor = COLORS[DimensionZ];
+                                break;
+                        }
+                        Console.Write(View[_x, _y]);
                     }
                 }
             }
-            Console.SetCursorPosition(0, WorldScale);
+            
+            Console.ResetColor();
         }
-        
+
+        /// <summary>
+        /// Updates maze and world
+        /// </summary>
         public static void Update()
         {
             Maze.SetupViewable2D();
             SetupMap();
 
             Player.PositionChanged = true;
-        }
-
-        public static void PrintDimensionInfo()
-        {
-            Console.WriteLine("Current Dimensions:");
-            Console.WriteLine("\tX: {0}\tY: {1}\tZ: {2}", DimensionX, DimensionY, DimensionZ);
-            Console.WriteLine("Maze Dimensions:");
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-                Console.Write("\t{0}: {1}", _d, Maze.DimensionInfo[_d]);
-            Console.WriteLine();
-        }
-
-        public static void PrintPlayerInfo()
-        {
-            Console.WriteLine("Player--");
-            Console.WriteLine("\tCoordinates:");
-            Console.WriteLine("\t\tOverall: X: {0}\tY: {1}\tZ: {2}", Player.PlayerX, Player.PlayerY, Player.PlayerZ);
-            Console.WriteLine("\t\tIn Cell: X: {0}\tY: {1}", Player.CoorInCell[X], Player.CoorInCell[Y]);
-            Console.Write("\t\tIn Maze: ");
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-                Console.Write("{0}: {1}\t", _d, Player.CurrentCell[_d]);
-            Console.WriteLine();
-        }
-
-        public static void PrintInfo()
-        {
-            Console.WriteLine("Current Dimensions:");
-            Console.WriteLine("\tX: {0}\tY: {1}\tZ: {2}", DimensionX, DimensionY, DimensionZ);
-            Console.WriteLine();
-
-            Console.WriteLine("Player--");
-            Console.WriteLine("\tCan Switch Dimensions: {0}", Player.CanSwitchDimensions);
-            Console.WriteLine("\tCoordinates:");
-            Console.WriteLine("\t\tOverall: X: {0}\tY: {1}\tZ: {2}", Player.PlayerX, Player.PlayerY, Player.PlayerZ);
-            Console.WriteLine("\t\tIn Cell: X: {0}\tY: {1}", Player.CoorInCell[X], Player.CoorInCell[Y]);
-            Console.Write("\t\tIn Maze: ");
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-                Console.Write("{0}: {1}\t", _d, Player.CurrentCell[_d]);
-            Console.WriteLine();
-            Console.WriteLine("\t\tTo... negX: {0}\tposX: {1}\tnegY: {2}\tposY: {3}", Player.InNegX, Player.InPosX, Player.InNegY, Player.InPosY);
-            Console.WriteLine("\t\tCan move... negX: {0}\tposX: {1}\tnegY: {2}\tposY: {3}", Player.CanNegX, Player.CanPosX, Player.CanNegY, Player.CanPosY);
-            Console.WriteLine();
-
-            Console.WriteLine("Cell information--");
-            Console.Write("\tEntrance: ");
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-                Console.Write("\t{0}: {1}", _d, Maze.Entrance[_d]);
-            Console.WriteLine("\t {0}", Maze.EntranceViewable ? "Veiwable" : "");
-            Console.Write("\tCurrent: ");
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-                Console.Write("\t{0}: {1}", _d, Player.CurrentCell[_d]);
-            Console.WriteLine();
-            Console.Write("\tExit:\t ");
-            for (int _d = 0; _d < Maze.Dimensions; _d++)
-                Console.Write("\t{0}: {1}", _d, Maze.Exit[_d]);
-            Console.WriteLine("\t {0}", Maze.ExitViewable ? "Veiwable" : "");
-
-
-
-            for (int _y = 0; _y < Maze.Viewable2D.GetLength(1); _y++)
-            {
-                for (int _x = 0; _x < Maze.Viewable2D.GetLength(0); _x++)
-                {
-                    switch (Maze.Viewable2D[_x, _y])
-                    {
-                        case 3:
-                            Console.Write('#');
-                            break;
-                        case 2:
-                            Console.Write('/');
-                            break;
-                        case 4:
-                            Console.Write('0');
-                            break;
-                        case 6:
-                            Console.Write('%');
-                            break;
-                        default:
-                            Console.Write(' ');
-                            break;
-
-                    }
-                }
-                Console.WriteLine();
-            }
-            Console.WriteLine();
         }
     }
 }

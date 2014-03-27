@@ -6,6 +6,30 @@ using System.Diagnostics;
 
 namespace MDMazeGeneration
 {
+    //Flags for bound values
+    [Flags]
+    static enum Bound : ushort
+    {
+        None        = 0x0,
+        Dimension0  = 0x1,
+        Dimension1  = 0x2,
+        Dimension2  = 0x4,
+        Dimension3  = 0x8,
+        Dimension4  = 0x10,
+        Dimension5  = 0x20,
+        Dimension6  = 0x40,
+        Dimension7  = 0x80,
+        Dimension8  = 0x100,
+        Dimension9  = 0x200,
+        Dimension10 = 0x400,
+        Dimension11 = 0x800,
+        Dimension12 = 0x1000,
+        Dimension13 = 0x2000,
+        Dimension14 = 0x4000,
+        Dimension15 = 0x8000
+    }
+
+
     /// <summary>
     /// A static class that generates and holds a maze spanning multiple dimensions
     /// </summary>
@@ -22,12 +46,9 @@ namespace MDMazeGeneration
 
         static int dimensions;
         static int[] dimensionInfo;
-        //protected static int cellScale;
-        //protected static float safeZonePercent;
         static int[] entranceCoor, exitCoor;
         static List<Cell> sets;
         //Storage arrays
-        //protected static Array bounds;
         static Array worldBounds;
         static int[,] viewable2D;
 
