@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Collections.ObjectModel;
 
 namespace MDMazeGeneration
 {
     //Flags for bound values
     [Flags]
-    static enum Bound : ushort
+    enum Bound : ushort
     {
         None        = 0x0,
         Dimension0  = 0x1,
@@ -46,83 +47,41 @@ namespace MDMazeGeneration
 
         static int dimensions;
         static int[] dimensionInfo;
-        static int[] entranceCoor, exitCoor;
+        static int[] entranceCoor, exitCoor, initialD;
         static List<Cell> sets;
         //Storage arrays
         static Array worldBounds;
         static int[,] viewable2D;
 
+        /// <summary>
+        /// The number of dimensions the maze extends in
+        /// </summary>
         public static int Dimensions { get { return dimensions; } }
-        public static int[] DimensionInfo { get { return dimensionInfo; } }
-        public static int[] Entrance
-        {
-            get
-            {
-                int[] _entrance = new int[dimensions];
-                Array.Copy(entranceCoor, _entrance, dimensions);
-                return _entrance;
-            }
-        }
-        public static int[] Exit
-        {
-            get
-            {
-                int[] _exit = new int[dimensions];
-                Array.Copy(exitCoor, _exit, dimensions);
-                return _exit;
-            }
-        }
-        public static int[] IntialDimensions
-        {
-            get
-            {
-                int[] _iDimensions = new int[3];
-                int _d = 0;
-                for (int _i = 0; _i < Dimensions; _i++)
-                {
-                    if (Entrance[_i] == 0 || Entrance[_i] == DimensionInfo[_i] - 1)
-                    {
-                        _iDimensions[_d] = _i;
-                        _d++;
-                    }
-                    if (_d >= 3)
-                        break;
-                }
-                if (_d < 3)
-                    for (int _i = 0; _i < Dimensions; _i++)
-                    {
-                        if (!_iDimensions.Contains(_i))
-                        {
-                            _iDimensions[_d] = _i;
-                            _d++;
-                        }
-                        if (_d >= 3)
-                            break;
-                    }
-                return _iDimensions;
-            }
-        }
+        /// <summary>
+        /// A readonly array of information, mainly the sizes of, each dimension
+        /// </summary>
+        public static ReadOnlyCollection<int> DimensionInfo { get { return Array.AsReadOnly<int>(dimensionInfo); } }
+        /// <summary>
+        /// A readonly array for the coordinates of the entrance cell in the maze
+        /// </summary>
+        public static ReadOnlyCollection<int> Entrance { get { return Array.AsReadOnly<int>(entranceCoor); } }
+        /// <summary>
+        /// A readonly array for the coordinates of the exit cell in the maze
+        /// </summary>
+        public static ReadOnlyCollection<int> Exit { get { return Array.AsReadOnly<int>(exitCoor); } }
+        /// <summary>
+        /// A readonly array for initially viewable dimensions when starting the maze
+        /// </summary>
+        public static ReadOnlyCollection<int> InitialDimensions { get { return Array.AsReadOnly<int>(initialD); } }
 
-        public static int cellsCreated, cellsWritten, cellsLost;
-        public static int cellsInSets
-        {
-            get
-            {
-                int _cellsInSets = 0;
-                for (int _i = 0; _i < sets.Count(); _i++)
-                    _cellsInSets += sets.ElementAt(_i).GetSetSize();
-                return _cellsInSets;
-            }
-        }
-        public static bool lostCells
-        {
-            get
-            {
-                bool _lostCells = cellsCreated - cellsLost > cellsWritten + cellsInSets;
-                cellsLost = cellsCreated - (cellsWritten + cellsInSets);
-                return _lostCells;
-            }
-        }
+        /// <summary>
+        /// Current 2D viewable part of maze
+        /// </summary>
+        public static int[,] Viewable2D { get { return viewable2D; } }
+
+        /// <summary>
+        /// Boolean if entrance is currently viewable
+        /// </summary>
         public static bool EntranceViewable
         {
             get
@@ -133,6 +92,9 @@ namespace MDMazeGeneration
                 return true;
             }
         }
+        /// <summary>
+        /// Boolean if exit is currently viewable
+        /// </summary>
         public static bool ExitViewable
         {
             get
@@ -143,7 +105,23 @@ namespace MDMazeGeneration
                 return true;
             }
         }
-        public static int[,] Viewable2D { get { return viewable2D; } }
+        /// <summary>
+        /// Center X coordinate of entrance in viewable maze
+        /// </summary>
+        public static int EntranceViewCenterX { get { return BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE);  } }
+        /// <summary>
+        /// Center Y coordinate of entrance in viewable maze
+        /// </summary>
+        public static int EntranceViewCenterY { get { return BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE); } }
+        /// <summary>
+        /// Center X coordinate of exit in viewable maze
+        /// </summary>
+        public static int ExitViewCenterX { get { return BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE); } }
+        /// <summary>
+        /// Center Y coordinate of exit in viewable maze
+        /// </summary>
+        public static int ExitViewCenterY { get { return BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE); } }
+        
 
         /// <summary>
         /// Constructor for Maze
@@ -153,10 +131,6 @@ namespace MDMazeGeneration
         /// <param name="_safeZonePercent">Inner percent of cell that is always open and safe to switch dimensions in.</param>
         public static void Initialize(int[] _dInfo)
         {
-            cellsCreated = 0;
-            cellsWritten = 0;
-            cellsLost = 0;
-
             if (_dInfo.Length > MAX_DIMENSIONS)
                 Array.Resize<int>(ref _dInfo, MAX_DIMENSIONS);
 
@@ -283,14 +257,6 @@ namespace MDMazeGeneration
                         sets.ElementAt(_i).MergeSet();
                     }
                 }
-
-                Console.WriteLine("Created cells: {0}", cellsCreated);
-                Console.WriteLine("Cells in sets: {0}", cellsInSets);
-                Console.WriteLine("Written cells: {0}", cellsWritten);
-                for (int _i = 0; _i < sets.Count; _i++)
-                {
-                    Console.WriteLine("Set {0} has {1} cells in last {2}D space.", _i, sets.ElementAt(_i).CountSetCellsinLast(), Dimensions - 1);
-                }
             }
         }
 
@@ -302,6 +268,30 @@ namespace MDMazeGeneration
             //Randomly generate entrance and exit coordinates
             entranceCoor = Randomize.RandOpening(dimensionInfo);
             exitCoor = Randomize.RandOpening(dimensionInfo, entranceCoor);
+
+            //Get initial viewable dimensions
+            initialD = new int[3];
+            int _d = 0;
+            for (int _i = 0; _i < Dimensions; _i++)
+            {
+                if (Entrance[_i] == 0 || Entrance[_i] == DimensionInfo[_i] - 1)
+                {
+                    initialD[_d] = _i;
+                    _d++;
+                }
+                if (_d >= initialD.Length)
+                    return;
+            }
+            for (int _i = 0; _i < Dimensions; _i++)
+            {
+                if (!initialD.Contains(_i))
+                {
+                    initialD[_d] = _i;
+                    _d++;
+                }
+                if (_d >= initialD.Length)
+                    return;
+            }
         }
 
         /// <summary>
@@ -309,9 +299,6 @@ namespace MDMazeGeneration
         /// </summary>
         static public void SetupViewable2D()
         {
-            //viewable2D = Get2DViewable(World.CurrentDimensions, World.CenterCell);
-
-            //TESTING THIS CODE
             //Initialize view array
             int _viewX = BOUND_SCALE + dimensionInfo[World.DimensionX] * (BOUND_SCALE + CELL_SCALE),
                 _viewY = BOUND_SCALE + dimensionInfo[World.DimensionY] * (BOUND_SCALE + CELL_SCALE);
@@ -375,50 +362,46 @@ namespace MDMazeGeneration
 
             //Open all outside walls of entrance and exit cells if cells are viewable
             //Check entrance
-            if (IsViewable(entranceCoor, World.CenterCell, World.DimensionX, World.DimensionY))
+            if (EntranceViewable)
             {
                 //Check and Open X
-                viewable2D[0, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(viewable2D[0, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (entranceCoor[World.DimensionX] == 0));
-                viewable2D[_viewX - 1, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(viewable2D[_viewX - 1, BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (entranceCoor[World.DimensionX] == dimensionInfo[World.DimensionX] - 1));
+                viewable2D[0, EntranceViewCenterY] =
+                    SetBound(viewable2D[0, EntranceViewCenterY], (Entrance[World.DimensionX] == 0) || OpenBound(viewable2D[0, EntranceViewCenterY]));
+                viewable2D[_viewX - 1, EntranceViewCenterY] =
+                    SetBound(viewable2D[_viewX - 1, EntranceViewCenterY], (Entrance[World.DimensionX] == dimensionInfo[World.DimensionX] - 1) ||
+                    OpenBound(viewable2D[_viewX - 1, EntranceViewCenterY]));
                 //Check and Open Y
-                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0] =
-                    SetBound(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0], (entranceCoor[World.DimensionY] == 0));
-                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1] =
-                    SetBound(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1], (entranceCoor[World.DimensionY] == dimensionInfo[World.DimensionY] - 1));
+                viewable2D[EntranceViewCenterX, 0] =
+                    SetBound(viewable2D[EntranceViewCenterX, 0], (Entrance[World.DimensionY] == 0) || OpenBound(viewable2D[EntranceViewCenterX, 0]));
+                viewable2D[EntranceViewCenterX, _viewY - 1] =
+                    SetBound(viewable2D[EntranceViewCenterX, _viewY - 1], (Entrance[World.DimensionY] == dimensionInfo[World.DimensionY] - 1) ||
+                    OpenBound(viewable2D[EntranceViewCenterX, _viewY - 1]));
                 //Check and Open Z
-                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetDescending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
-                     (entranceCoor[World.DimensionZ] == 0) ||
-                     Descending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
-                viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetAscending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
-                     (entranceCoor[World.DimensionZ] == dimensionInfo[World.DimensionZ] - 1) ||
-                     Ascending(viewable2D[BOUND_SCALE + entranceCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + entranceCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
+                viewable2D[EntranceViewCenterX, EntranceViewCenterY] = SetDescending(viewable2D[EntranceViewCenterX, EntranceViewCenterY],
+                     (Entrance[World.DimensionZ] == 0) || Descending(viewable2D[EntranceViewCenterX, EntranceViewCenterY]));
+                viewable2D[EntranceViewCenterX, EntranceViewCenterY] = SetAscending(viewable2D[EntranceViewCenterX, EntranceViewCenterY],
+                     (Entrance[World.DimensionZ] == dimensionInfo[World.DimensionZ] - 1) || Ascending(viewable2D[EntranceViewCenterX, EntranceViewCenterY]));
             }
             //Check exit
-            if (IsViewable(exitCoor, World.CenterCell, World.DimensionX, World.DimensionY))
+            if (ExitViewable)
             {
                 //Check and Open X
-                viewable2D[0, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(viewable2D[0, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (exitCoor[World.DimensionX] == 0));
-                viewable2D[_viewX - 1, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                    SetBound(viewable2D[_viewX - 1, BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)], (exitCoor[World.DimensionX] == dimensionInfo[World.DimensionX] - 1));
+                viewable2D[0, ExitViewCenterY] =
+                    SetBound(viewable2D[0, ExitViewCenterY], (Exit[World.DimensionX] == 0) || OpenBound(viewable2D[0, ExitViewCenterY]));
+                viewable2D[_viewX - 1, ExitViewCenterY] =
+                    SetBound(viewable2D[_viewX - 1, ExitViewCenterY], (Exit[World.DimensionX] == dimensionInfo[World.DimensionX] - 1) ||
+                    OpenBound(viewable2D[_viewX - 1, ExitViewCenterY]));
                 //Check and Open Y
-                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0] =
-                    SetBound(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), 0], (exitCoor[World.DimensionY] == 0));
-                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1] =
-                    SetBound(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), _viewY - 1], (exitCoor[World.DimensionY] == dimensionInfo[World.DimensionY] - 1));
+                viewable2D[ExitViewCenterX, 0] =
+                    SetBound(viewable2D[ExitViewCenterX, 0], (Exit[World.DimensionY] == 0) || OpenBound(viewable2D[ExitViewCenterX, 0]));
+                viewable2D[ExitViewCenterX, _viewY - 1] =
+                    SetBound(viewable2D[ExitViewCenterX, _viewY - 1], (Exit[World.DimensionY] == dimensionInfo[World.DimensionY] - 1) ||
+                    OpenBound(viewable2D[ExitViewCenterX, _viewY - 1]));
                 //Check and Open Z
-                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetDescending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
-                     (exitCoor[World.DimensionZ] == 0) ||
-                     Descending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
-                viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)] =
-                     SetAscending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)],
-                     (exitCoor[World.DimensionZ] == dimensionInfo[World.DimensionZ] - 1) ||
-                     Ascending(viewable2D[BOUND_SCALE + exitCoor[World.DimensionX] * (BOUND_SCALE + CELL_SCALE), BOUND_SCALE + exitCoor[World.DimensionY] * (BOUND_SCALE + CELL_SCALE)]));
+                viewable2D[ExitViewCenterX, ExitViewCenterY] = SetDescending(viewable2D[ExitViewCenterX, ExitViewCenterY],
+                     (Exit[World.DimensionZ] == 0) || Descending(viewable2D[ExitViewCenterX, ExitViewCenterY]));
+                viewable2D[ExitViewCenterX, ExitViewCenterY] = SetAscending(viewable2D[ExitViewCenterX, ExitViewCenterY],
+                     (Exit[World.DimensionZ] == dimensionInfo[World.DimensionZ] - 1) || Ascending(viewable2D[ExitViewCenterX, ExitViewCenterY]));
             }
         }
 
@@ -527,7 +510,7 @@ namespace MDMazeGeneration
             return IsInterior(_val) && GetBit(_val, 2) == 1;
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Calculates and returns information about bounds from a value and other information
         /// Will return a 2D array of integers that contains n objects and four pieces of information for each object
         /// [cX, cY, w, d]
@@ -633,7 +616,7 @@ namespace MDMazeGeneration
 
             //Return information
             return _bInfo;
-        }
+        }*/
 
         /// <summary>
         /// Calculates and returns information about bounds from a value and other information
@@ -740,7 +723,7 @@ namespace MDMazeGeneration
             return _bInfo;
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Calculates and returns information about a cell interior from a value and other information
         /// Will return a 2D array of integers that contains n objects and four pieces of information for each object
         /// [cX, cY, w, d]
@@ -812,7 +795,7 @@ namespace MDMazeGeneration
 
             //Return information
             return _iInfo;
-        }
+        }*/
 
         /// <summary>
         /// Calculates and returns information about a cell interior from a value and other information
@@ -933,7 +916,7 @@ namespace MDMazeGeneration
             return _center;
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Checks if the cell at the specified coordinates is viewable in the current 2D layer
         /// </summary>
         /// <param name="_toCheck">Cell to check</param>
@@ -947,7 +930,7 @@ namespace MDMazeGeneration
                 if (_d != _x && _d != _y && _toCheck[_d] != _currCell[_d])
                     return false;
             return true;
-        }
+        }*/
 
         /// <summary>
         /// Gets a specified bit from a value
@@ -1018,8 +1001,6 @@ namespace MDMazeGeneration
                 coordinates = _coor;
                 InitiateStorage();
                 NewSet();
-
-                Console.WriteLine("New cell: {0}", this.ToString());
             }
 
             /// <summary>
@@ -1104,7 +1085,6 @@ namespace MDMazeGeneration
             protected virtual void WriteToMaze()
             {
                 worldBounds.SetValue(bounds, coordinates);
-                Maze.cellsWritten++;
                 //Close cell when done writing it
                 Close();
             }
@@ -1337,31 +1317,6 @@ namespace MDMazeGeneration
             }
 
             /// <summary>
-            /// Counts cells in set that are in last part of last dimension
-            /// </summary>
-            /// <returns>Count of cells</returns>
-            public int CountSetCellsinLast()
-            {
-                return CountSetCellsinLast(GetFirstInSet());
-            }
-
-            /// <summary>
-            /// Counts cells in set that are in last part of last dimension
-            /// </summary>
-            /// <param name="_c">Cell currently looking at</param>
-            /// <returns>Count of cells</returns>
-            protected int CountSetCellsinLast(Cell _c)
-            {
-                int _count = 0;
-                if (coordinates[0] == DimensionInfo[0] - 1)
-                    _count++;
-                if (_c.childern.Count > 0)
-                    foreach (Cell _child in _c.childern)
-                        _count += GetSetSize(_child);
-                return _count;
-            }
-
-            /// <summary>
             /// Removes self from parent or sets if has no childern
             /// </summary>
             protected void NullSet()
@@ -1406,50 +1361,6 @@ namespace MDMazeGeneration
                 //Replace cell with last cell in set, removing current cell's childern and parent
                 //Then sort set
                 ReplaceWithLast().SortSet();
-            }
-
-            /// <summary>
-            /// Rebalances the max heap sorted set of cells recursively
-            /// For after a set is edited.
-            /// </summary>
-            protected void RebalanceSet()
-            {
-                //Return if cell has no chilern
-                if (childern.Count == 0)
-                {
-                    return;
-                }
-
-                //If cell has less childern than it should
-                if (childern.Count < dimensions)
-                {
-                    Cell _current = childern.Max();
-
-                    while ((childern.Count < dimensions) && (_current.childern.Count != 0))
-                    {
-                        Cell _holdChild = _current.childern.Max();
-                        _holdChild.RemoveParent();
-                        AddChild(_holdChild);
-                    }
-                    _current.RebalanceSet();
-                }
-
-                //If cell has more childern than it should
-                if (childern.Count > dimensions)
-                {
-                    //List<Cell> _hold = new List<Cell>();
-
-                    while (childern.Count > dimensions)
-                    {
-                        Cell _holdChild = childern.Min();
-                        _holdChild.RemoveParent();
-                        childern.Min().AddChild(_holdChild);
-                    }
-                }
-
-                //DEBUGGING
-                Console.WriteLine("{0} RebalanceSet()", ToString());
-                //Maze.PrintCellInfo();
             }
 
             /// <summary>
@@ -1749,28 +1660,6 @@ namespace MDMazeGeneration
             }
 
             /// <summary>
-            /// Removes a neighboring cell in a specified dimension from the current cell's set should the neigher exist and is part of set
-            /// </summary>
-            /// <param name="_d">Specified dimension</param>
-            protected void RemoveNeighborFromSet(int _d)
-            {
-                //Check if neighbor exists
-                if (!HasNeighbor(_d))
-                {
-                    return;
-                }
-
-                //Check if same set
-                if (!SameSet(neighbors[_d]))
-                {
-                    return;
-                }
-
-                //Add neighbor to set
-                neighbors[_d].RemoveFromSet();
-            }
-
-            /// <summary>
             /// Defines the bounds in a specified dimension of a cell
             /// </summary>
             /// <param name="_d">Specified dimension</param>
@@ -1810,20 +1699,6 @@ namespace MDMazeGeneration
                 }
             }
 
-            /* /// <summary>
-             /// Closes the bounds in a specified dimension of a cell
-             /// </summary>
-             /// <param name="_d">Specified dimension</param>
-             protected void ForceCloseBound(int _d)
-             {
-                 bounds = (ushort)SetBitTo(bounds, _d, 1);
-                 //If not open, remove neighbor from set
-                 if (!Open(_d))
-                 {
-                     RemoveNeighborToSet(_d);
-                 }
-             }*/
-
             /// <summary>
             /// Returns if a bound in a specified dimension is open
             /// </summary>
@@ -1854,6 +1729,12 @@ namespace MDMazeGeneration
             {
                 return coordinates[_d] == dimensionInfo[_d] - 1;
             }
+
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //      DEBUGGING METHODS
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             /// <summary>
             /// Gets a string representation of the cell
@@ -2014,6 +1895,117 @@ namespace MDMazeGeneration
 
                 return _setArray;
             }
+
+
+            /*/// <summary>
+            /// Counts cells in set that are in last part of last dimension
+            /// </summary>
+            /// <returns>Count of cells</returns>
+            public int CountSetCellsinLast()
+            {
+                return CountSetCellsinLast(GetFirstInSet());
+            }
+
+            /// <summary>
+            /// Counts cells in set that are in last part of last dimension
+            /// </summary>
+            /// <param name="_c">Cell currently looking at</param>
+            /// <returns>Count of cells</returns>
+            protected int CountSetCellsinLast(Cell _c)
+            {
+                int _count = 0;
+                if (coordinates[0] == DimensionInfo[0] - 1)
+                    _count++;
+                if (_c.childern.Count > 0)
+                    foreach (Cell _child in _c.childern)
+                        _count += GetSetSize(_child);
+                return _count;
+            }*/
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //      UNUSED METHODS
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            /* /// <summary>
+             /// Closes the bounds in a specified dimension of a cell
+             /// </summary>
+             /// <param name="_d">Specified dimension</param>
+             protected void ForceCloseBound(int _d)
+             {
+                 bounds = (ushort)SetBitTo(bounds, _d, 1);
+                 //If not open, remove neighbor from set
+                 if (!Open(_d))
+                 {
+                     RemoveNeighborToSet(_d);
+                 }
+             }*/
+
+
+            /*/// <summary>
+            /// Rebalances the max heap sorted set of cells recursively
+            /// For after a set is edited.
+            /// </summary>
+            protected void RebalanceSet()
+            {
+                //Return if cell has no chilern
+                if (childern.Count == 0)
+                {
+                    return;
+                }
+
+                //If cell has less childern than it should
+                if (childern.Count < dimensions)
+                {
+                    Cell _current = childern.Max();
+
+                    while ((childern.Count < dimensions) && (_current.childern.Count != 0))
+                    {
+                        Cell _holdChild = _current.childern.Max();
+                        _holdChild.RemoveParent();
+                        AddChild(_holdChild);
+                    }
+                    _current.RebalanceSet();
+                }
+
+                //If cell has more childern than it should
+                if (childern.Count > dimensions)
+                {
+                    //List<Cell> _hold = new List<Cell>();
+
+                    while (childern.Count > dimensions)
+                    {
+                        Cell _holdChild = childern.Min();
+                        _holdChild.RemoveParent();
+                        childern.Min().AddChild(_holdChild);
+                    }
+                }
+            }*/
+
+
+            /*/// <summary>
+            /// Removes a neighboring cell in a specified dimension from the current cell's set should the neigher exist and is part of set
+            /// </summary>
+            /// <param name="_d">Specified dimension</param>
+            protected void RemoveNeighborFromSet(int _d)
+            {
+                //Check if neighbor exists
+                if (!HasNeighbor(_d))
+                {
+                    return;
+                }
+
+                //Check if same set
+                if (!SameSet(neighbors[_d]))
+                {
+                    return;
+                }
+
+                //Add neighbor to set
+                neighbors[_d].RemoveFromSet();
+            }*/
+
+
         }
     }
 }

@@ -79,15 +79,15 @@ namespace MDMazeGeneration
         /// </summary>
         static void Start()
         {
+            //Use initializer to setup maze
             Initializer.SetupMaze();
 
             //Clear console
             Console.Clear();
+
             //Run
             Runner.Run();
         }
-
-        
         
         /// <summary>
         /// Method to check if player wants to reset maze once finishing it
@@ -95,8 +95,14 @@ namespace MDMazeGeneration
         /// <returns>True of false whether or not to reset maze</returns>
         static bool Reset()
         {
-            Console.WriteLine("Would you like to play again (Y/N)?");
-            char input = Console.ReadKey().KeyChar;
+            char input;
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("Would you like to play again (Y/N)?");
+                input = Console.ReadKey().KeyChar;
+            } while (input != 'y' && input != 'n');
+
             return (input == 'y');
         }
     }

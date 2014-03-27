@@ -23,6 +23,8 @@ namespace MDMazeGeneration
 
         static int[] cellCoor2D, currCell; // Stores values for player
 
+        static bool win; // Stores if player has won
+
         /// <summary>
         /// A boolean value representing if it is safe to shift dimensions
         /// </summary>
@@ -61,7 +63,7 @@ namespace MDMazeGeneration
             get
             {
                 if (currCell == null)
-                    currCell = Maze.Entrance;
+                    currCell = Maze.Entrance.ToArray();
                 return currCell;
             }
             set
@@ -82,10 +84,17 @@ namespace MDMazeGeneration
                 {
                     if ((value < PlayerX && !CanNegX) || (value > PlayerX && !CanPosX))
                         return;
+
                     int _currCellVal = ((int)Math.Floor((double)value / World.CellScale) < 0 ? 0 :
                         ((int)Math.Floor((double)value / World.CellScale) < Maze.DimensionInfo[World.DimensionX] ?
                         (int)Math.Floor((double)value / World.CellScale) : (Maze.DimensionInfo[World.DimensionX] - 1)));
-                    int _inCellVal = (value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0);
+
+                    win = AtExit && ((int)Math.Floor((double)value / World.CellScale) < 0 ||
+                        (int)Math.Floor((double)value / World.CellScale) >= Maze.DimensionInfo[World.DimensionX]);
+
+                    int _inCellVal = value == World.View.GetLength(X) ? CoorInCell[X] :
+                        ((value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0));
+
                     CurrentCell[World.DimensionX] = _currCellVal;
                     CoorInCell[X] = _inCellVal;
                 }
@@ -100,10 +109,17 @@ namespace MDMazeGeneration
             {
                 if ((value < PlayerY && !CanNegY) || (value > PlayerY && !CanPosY))
                     return;
+
                 int _currCellVal = ((int)Math.Floor((double)value / World.CellScale) < 0 ? 0 :
                     ((int)Math.Floor((double)value / World.CellScale) < Maze.DimensionInfo[World.DimensionY] ?
                     (int)Math.Floor((double)value / World.CellScale) : (Maze.DimensionInfo[World.DimensionY] - 1)));
-                int _inCellVal = (value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0);
+
+                win = AtExit && ((int)Math.Floor((double)value / World.CellScale) < 0 ||
+                        (int)Math.Floor((double)value / World.CellScale) >= Maze.DimensionInfo[World.DimensionY]);
+
+                int _inCellVal = value == World.View.GetLength(Y) ? CoorInCell[Y] :
+                        ((value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0));
+
                 CurrentCell[World.DimensionY] = _currCellVal;
                 CoorInCell[Y] = _inCellVal;
             }
@@ -122,6 +138,8 @@ namespace MDMazeGeneration
                     (value > CurrentCell[World.DimensionZ] && CanPosZ)) ? (value < 0 ? 0 :
                     (value < Maze.DimensionInfo[World.DimensionZ] ? value : (Maze.DimensionInfo[World.DimensionZ] - 1)))
                     : CurrentCell[World.DimensionZ];
+                win = AtExit && (((value < CurrentCell[World.DimensionZ] && CanNegZ) ||
+                    (value > CurrentCell[World.DimensionZ] && CanPosZ)) && (value < 0 || value >= Maze.DimensionInfo[World.DimensionZ]));
             }
         }
         public static char InNegX
@@ -186,9 +204,9 @@ namespace MDMazeGeneration
         public static bool ZChanged { get { return zChanged; } set { zChanged = value; } }
 
         /// <summary>
-        /// Boolean value specifiying if the player has won
+        /// Boolean value specifiying if the player is in the exit cell
         /// </summary>
-        public static bool HasWon
+        public static bool AtExit
         {
             get
             {
@@ -199,8 +217,15 @@ namespace MDMazeGeneration
             }
         }
 
+        /// <summary>
+        /// Boolean value specifiying if the player has won
+        /// </summary>
+        public static bool HasWon { get { return win; } }
+
         public static bool Input()
         {
+            win = false;
+
             bool _loop = true;
             int _holdX = PlayerX, _holdY = PlayerY, _holdZ = PlayerZ;
 
@@ -257,6 +282,8 @@ namespace MDMazeGeneration
         public static bool Input(ConsoleKey _key)
         {
             int _holdX = PlayerX, _holdY = PlayerY, _holdZ = PlayerZ;
+
+            win = false;
 
                 switch (_key)
                 {
