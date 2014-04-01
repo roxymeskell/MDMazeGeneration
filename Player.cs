@@ -92,8 +92,7 @@ namespace MDMazeGeneration
                     win = AtExit && ((int)Math.Floor((double)value / World.CellScale) < 0 ||
                         (int)Math.Floor((double)value / World.CellScale) >= Maze.DimensionInfo[World.DimensionX]);
 
-                    int _inCellVal = value == World.View.GetLength(X) ? CoorInCell[X] :
-                        ((value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0));
+                    int _inCellVal = value == World.View.GetLength(X) ? CoorInCell[X] : (value < 0 ? 0 : value % World.CellScale);
 
                     CurrentCell[World.DimensionX] = _currCellVal;
                     CoorInCell[X] = _inCellVal;
@@ -117,8 +116,7 @@ namespace MDMazeGeneration
                 win = AtExit && ((int)Math.Floor((double)value / World.CellScale) < 0 ||
                         (int)Math.Floor((double)value / World.CellScale) >= Maze.DimensionInfo[World.DimensionY]);
 
-                int _inCellVal = value == World.View.GetLength(Y) ? CoorInCell[Y] :
-                        ((value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0));
+                int _inCellVal = value == World.View.GetLength(Y) ? CoorInCell[Y] : (value < 0 ? 0 : value % World.CellScale);
 
                 CurrentCell[World.DimensionY] = _currCellVal;
                 CoorInCell[Y] = _inCellVal;
