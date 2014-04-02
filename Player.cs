@@ -22,6 +22,7 @@ namespace MDMazeGeneration
         static readonly int X = 0, Y = 1, Z = 2; // Some constants defined for the sake of less headache
 
         static int[] cellCoor2D, currCell; // Stores values for player
+        static bool win;
 
         /// <summary>
         /// A boolean value representing if it is safe to shift dimensions
@@ -80,12 +81,17 @@ namespace MDMazeGeneration
             get { return CoorOnGrid[X]; }
             set 
                 {
+                    win = AtExit && (value < 0 || value == World.View.GetLength(X));
+
                     if ((value < PlayerX && !CanNegX) || (value > PlayerX && !CanPosX))
                         return;
+
                     int _currCellVal = ((int)Math.Floor((double)value / World.CellScale) < 0 ? 0 :
                         ((int)Math.Floor((double)value / World.CellScale) < Maze.DimensionInfo[World.DimensionX] ?
                         (int)Math.Floor((double)value / World.CellScale) : (Maze.DimensionInfo[World.DimensionX] - 1)));
-                    int _inCellVal = (value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0);
+
+                    int _inCellVal = value == World.View.GetUpperBound(X) ? World.CellScale : (value < 0 ? 0 : value % World.CellScale);
+
                     CurrentCell[World.DimensionX] = _currCellVal;
                     CoorInCell[X] = _inCellVal;
                 }
@@ -98,14 +104,20 @@ namespace MDMazeGeneration
             get { return CoorOnGrid[Y]; }
             set
             {
+                win = AtExit && (value < 0 || value == World.View.GetLength(X));
+
                 if ((value < PlayerY && !CanNegY) || (value > PlayerY && !CanPosY))
                     return;
+
                 int _currCellVal = ((int)Math.Floor((double)value / World.CellScale) < 0 ? 0 :
                     ((int)Math.Floor((double)value / World.CellScale) < Maze.DimensionInfo[World.DimensionY] ?
                     (int)Math.Floor((double)value / World.CellScale) : (Maze.DimensionInfo[World.DimensionY] - 1)));
-                int _inCellVal = (value % World.CellScale) + (value % World.CellScale < 0 ? World.CellScale : 0);
+
+                int _inCellVal = value == World.View.GetUpperBound(Y) ? World.CellScale : (value < 0 ? 0 : value % World.CellScale);
+
                 CurrentCell[World.DimensionY] = _currCellVal;
                 CoorInCell[Y] = _inCellVal;
+
             }
         }
         /// <summary>
@@ -122,6 +134,7 @@ namespace MDMazeGeneration
                     (value > CurrentCell[World.DimensionZ] && CanPosZ)) ? (value < 0 ? 0 :
                     (value < Maze.DimensionInfo[World.DimensionZ] ? value : (Maze.DimensionInfo[World.DimensionZ] - 1)))
                     : CurrentCell[World.DimensionZ];
+                win = AtExit && ((value < PlayerZ && !CanNegZ) || (value > PlayerZ && !CanPosZ));
             }
         }
         public static char InNegX
@@ -186,9 +199,9 @@ namespace MDMazeGeneration
         public static bool ZChanged { get { return zChanged; } set { zChanged = value; } }
 
         /// <summary>
-        /// Boolean value specifiying if the player has won
+        /// Boolean value specifiying if the player is in the exit cell
         /// </summary>
-        public static bool HasWon
+        public static bool AtExit
         {
             get
             {
@@ -199,8 +212,15 @@ namespace MDMazeGeneration
             }
         }
 
+        /// <summary>
+        /// If the player has won
+        /// </summary>
+        public static bool HasWon { get { return win; } }
+
         public static bool Input()
         {
+            win = false;
+
             bool _loop = true;
             int _holdX = PlayerX, _holdY = PlayerY, _holdZ = PlayerZ;
 
@@ -258,6 +278,7 @@ namespace MDMazeGeneration
         public static bool Input(ConsoleKey _key)
         {
             int _holdX = PlayerX, _holdY = PlayerY, _holdZ = PlayerZ;
+            win = false;
 
                 switch (_key)
                 {
@@ -337,6 +358,7 @@ namespace MDMazeGeneration
         {
             currCell = null;
             cellCoor2D = null;
+            win = false;
         }
     }
 }
