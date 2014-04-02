@@ -161,6 +161,8 @@ namespace MDMazeGeneration
       /// <param name="_openingScale">Opening scale</param>
         public static void Initialize(int[] _dInfo, int _interiorScale, int _boundScale, int _openingScale)
         {
+            Reset();
+
             Maze.Initialize(_dInfo);
 
             PlayerScale = 1;
@@ -179,6 +181,8 @@ namespace MDMazeGeneration
         /// <param name="_openingScale">Opening scale</param>
         public static void Initialize(int _interiorScale, int _boundScale, int _openingScale)
         {
+            Reset();
+
             PlayerScale = 1;
             InteriorScale = _interiorScale;
             BoundScale = _boundScale; 

@@ -149,7 +149,6 @@ namespace MDMazeGeneration
 
             Console.Clear();
             Player.Reset();
-            World.Reset();
             Console.ResetColor();
         }
     }
