@@ -131,6 +131,7 @@ namespace MDMazeGeneration
         /// <param name="_safeZonePercent">Inner percent of cell that is always open and safe to switch dimensions in.</param>
         public static void Initialize(int[] _dInfo)
         {
+
             dimensionInfo = null;
 
             if (_dInfo.Length > MAX_DIMENSIONS)

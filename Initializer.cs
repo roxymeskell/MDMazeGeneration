@@ -152,8 +152,9 @@ namespace MDMazeGeneration
             //Initialize maze, or world, or both, depending
             World.Initialize(dInfo, interiorScale, boundScale, openingScale);
 
-            //Wait to start
-            Console.WriteLine("\nPress [enter] to begin.\n");
+            //Clear and Wait to start
+            Console.Clear();
+            Console.WriteLine("Press [enter] to begin.\n");
             while (ConsoleKey.Enter != Console.ReadKey().Key)
             {
                 //Spinning while input not [enter]

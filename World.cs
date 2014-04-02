@@ -158,7 +158,7 @@ namespace MDMazeGeneration
         /// <param name="_dInfo">Dimensions information</param>
         /// <param name="_interiorScale">Interior scale</param>
         /// <param name="_boundScale">Bound scale</param>
-        /// <param name="_openingScale">Opening scale</param>
+      /// <param name="_openingScale">Opening scale</param>
         public static void Initialize(int[] _dInfo, int _interiorScale, int _boundScale, int _openingScale)
         {
             Maze.Initialize(_dInfo);
