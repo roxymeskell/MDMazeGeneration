@@ -61,7 +61,7 @@ namespace MDMazeGeneration
             get
             {
                 if (currCell == null)
-                    currCell = Maze.Entrance;
+                    currCell = Maze.Entrance.ToArray();
                 return currCell;
             }
             set
@@ -243,6 +243,7 @@ namespace MDMazeGeneration
                         _loop = !ShiftD(Z);
                         break;
                     case ConsoleKey.Escape:
+                        Reset();
                         return false;
                     default:
                         _loop = true;
@@ -295,6 +296,7 @@ namespace MDMazeGeneration
                         ShiftD(Z);
                         break;
                     case ConsoleKey.Escape:
+                        Reset();
                         return false;
                     default:
                         break;
@@ -326,6 +328,15 @@ namespace MDMazeGeneration
             World.Update();
 
             return true;
+        }
+
+        /// <summary>
+        /// Resets location variables of Player
+        /// </summary>
+        public static void Reset()
+        {
+            currCell = null;
+            cellCoor2D = null;
         }
     }
 }

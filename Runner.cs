@@ -12,7 +12,7 @@ namespace MDMazeGeneration
         static string cellInfo = "Current Cell:\n     {0}";
         static string currDimensionInfo = "Current Dimensions:\n     X: {0}     Y: {1}     Z: {2}";
         static string visableMap = "Map:{0}";
-        static string controls = "Shift Dimensions:\n     [1][2][3]\n\nMovement:\n        [W]\n     [A][S][D]\n\nTraverse Staircases:\n     [Spacebar]";
+        static string controls = "Shift Dimensions:\n     [1][2][3]\n\nMovement:\n        [W]\n     [A][S][D]\n\nTranverse Staircases:\n     [Spacebar]";
         static string winMessage = "Player has completed maze!\nPress [enter] to continue.";
 
         public static string CellInfo
@@ -87,12 +87,15 @@ namespace MDMazeGeneration
             {
                 if (Console.KeyAvailable)
                 {
-                    //Move();
-                    Player.Input(Console.ReadKey(false).Key);
+                    if (!Player.Input(Console.ReadKey(false).Key))
+                        goto Quit;
                     Draw();
                 }
             }
             Win();
+
+        Quit:
+            return;
         }
 
         /// <summary>
@@ -102,8 +105,8 @@ namespace MDMazeGeneration
         {
             //Setup console
             Console.Clear();
-            Console.WindowWidth = BufferWidth % 200;
-            Console.WindowHeight = BufferHeight % 70;
+            Console.WindowWidth = BufferWidth > 200 ? 200 : BufferWidth;
+            Console.WindowHeight = BufferHeight > 70 ? 69 : BufferHeight;
             Console.BufferWidth = BufferWidth;
             Console.BufferHeight = BufferHeight;
 
@@ -119,9 +122,6 @@ namespace MDMazeGeneration
             }
 
             Console.CursorVisible = false;
-            //World.PrintWorld();
-            //WriteMaze();
-            //GetMoves();
         }
 
         /// <summary>
@@ -141,8 +141,15 @@ namespace MDMazeGeneration
                 Console.SetCursorPosition(WinLeft, WinTop + _i);
                 Console.Write(_win[_i]);
             }
-            Console.ReadLine();
+
+            while (ConsoleKey.Enter != Console.ReadKey().Key)
+            {
+                //Spinning while input not [enter]
+            }
+
             Console.Clear();
+            Player.Reset();
+            World.Reset();
             Console.ResetColor();
         }
     }

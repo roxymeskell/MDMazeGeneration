@@ -5,10 +5,20 @@ using System.Text;
 
 namespace MDMazeGeneration
 {
+    enum Part
+    {
+        Floor = ' ',
+        Bound = 'B',
+        Ascending = '+',
+        Descending = '-',
+        Player = 'X'
+    }
+
     static class World
     {
         static readonly int X = 0, Y = 1, Z = 2;
-        public static readonly char Floor = ' ', Bound = 'B', Ascending = '+', Descending = '-', PlayerMarker = 'X';
+        public static readonly char Floor = (char)Part.Floor, Bound = (char)Part.Bound, Ascending = (char)Part.Ascending,
+            Descending = (char)Part.Descending, PlayerMarker = (char)Part.Player;
         static readonly int MIN_INTERIOR_SCALE = 3, MIN_BOUND_SCALE = 1, MIN_PLAYER_SCALE = 1;
         static readonly ConsoleColor PLAYER_FG_COLOR = ConsoleColor.Black;
         static readonly ConsoleColor PLAYER_BG_COLOR = ConsoleColor.White;
@@ -50,7 +60,7 @@ namespace MDMazeGeneration
             get
             {
                 if (currDimensions == null)
-                    currDimensions = Maze.IntialDimensions;
+                    currDimensions = Maze.InitialDimensions.ToArray();
                 return currDimensions;
             }
             set
@@ -86,10 +96,13 @@ namespace MDMazeGeneration
             }
             set
             {
-                int _newD = value % Maze.Dimensions;
-                while (CurrentDimensions.Contains(_newD))
-                    _newD = (_newD + 1) % Maze.Dimensions;
-                CurrentDimensions[X] = _newD;
+                if (Maze.Dimensions > 3)
+                {
+                    int _newD = value % Maze.Dimensions;
+                    while (CurrentDimensions.Contains(_newD))
+                        _newD = (_newD + 1) % Maze.Dimensions;
+                    CurrentDimensions[X] = _newD;
+                }
             }
         }
         public static int DimensionY
@@ -100,10 +113,13 @@ namespace MDMazeGeneration
             }
             set
             {
-                int _newD = value % Maze.Dimensions;
-                while (CurrentDimensions.Contains(_newD))
-                    _newD = (_newD + 1) % Maze.Dimensions;
-                CurrentDimensions[Y] = _newD;
+                if (Maze.Dimensions > 3)
+                {
+                    int _newD = value % Maze.Dimensions;
+                    while (CurrentDimensions.Contains(_newD))
+                        _newD = (_newD + 1) % Maze.Dimensions;
+                    CurrentDimensions[Y] = _newD;
+                }
             }
         }
         public static int DimensionZ
@@ -114,10 +130,13 @@ namespace MDMazeGeneration
             }
             set
             {
-                int _newD = value % Maze.Dimensions;
-                while (CurrentDimensions.Contains(_newD))
-                    _newD = (_newD + 1) % Maze.Dimensions;
-                CurrentDimensions[Z] = _newD;
+                if (Maze.Dimensions > 3)
+                {
+                    int _newD = value % Maze.Dimensions;
+                    while (CurrentDimensions.Contains(_newD))
+                        _newD = (_newD + 1) % Maze.Dimensions;
+                    CurrentDimensions[Z] = _newD;
+                }
             }
         }
         public static int WorldScale { get { return (CellScale * 3) + BoundScale; } }
@@ -252,6 +271,11 @@ namespace MDMazeGeneration
         /// </summary>
         public static void Draw()
         {
+            //Ensuring that walls are visiable
+            Console.BackgroundColor = COLORS[(DimensionY + 1) % Maze.Dimensions];
+            Console.Clear();
+
+            //Start drawing
             int _startX, _endX, _startY, _endY;
             _startX = (CenterCell[DimensionX] - 1) * CellScale;
             _startX = _startX < 0 ? 0 : _startX;
@@ -288,19 +312,19 @@ namespace MDMazeGeneration
                     {
                         switch (View[_x, _y])
                         {
-                            case ' ':
+                            case (char)Part.Floor:
                                 Console.ForegroundColor = COLORS[DimensionX];
                                 Console.BackgroundColor = COLORS[DimensionX];
                                 break;
-                            case 'B':
+                            case (char)Part.Bound:
                                 Console.ForegroundColor = COLORS[DimensionY];
                                 Console.BackgroundColor = COLORS[DimensionY];
                                 break;
-                            case '+':
+                            case (char)Part.Ascending:
                                 Console.ForegroundColor = COLORS[(DimensionZ + 1) % Maze.Dimensions];
                                 Console.BackgroundColor = COLORS[DimensionZ];
                                 break;
-                            case '-':
+                            case (char)Part.Descending:
                                 Console.ForegroundColor = COLORS[(DimensionZ + 1) % Maze.Dimensions];
                                 Console.BackgroundColor = COLORS[DimensionZ];
                                 break;
@@ -311,6 +335,19 @@ namespace MDMazeGeneration
             }
             
             Console.ResetColor();
+        }
+
+        /// <summary>
+        /// Resets world variables
+        /// </summary>
+        public static void Reset()
+        {
+            playerScale = null;
+            interiorScale = null;
+            boundScale = null;
+            openingScale = null;
+            currDimensions = null;
+            view = null;
         }
 
         /// <summary>
