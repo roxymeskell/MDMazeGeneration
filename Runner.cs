@@ -5,6 +5,10 @@ using System.Text;
 
 namespace MDMazeGeneration
 {
+
+    /// <summary>
+    /// Static class to draw the maze as it is run
+    /// </summary>
     static class Runner
     {
         static readonly ConsoleColor WIN_FG = ConsoleColor.Yellow, WIN_BG = ConsoleColor.Red;

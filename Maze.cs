@@ -30,7 +30,6 @@ namespace MDMazeGeneration
         Dimension15 = 0x8000
     }
 
-
     /// <summary>
     /// A static class that generates and holds a maze spanning multiple dimensions
     /// </summary>
@@ -513,114 +512,6 @@ namespace MDMazeGeneration
             return IsInterior(_val) && GetBit(_val, 2) == 1;
         }
 
-        /*/// <summary>
-        /// Calculates and returns information about bounds from a value and other information
-        /// Will return a 2D array of integers that contains n objects and four pieces of information for each object
-        /// [cX, cY, w, d]
-        /// cX - the x value on which the object is centered
-        /// cY - the y value on which the object is centered
-        /// w - the width (scale on x-axis) of the object
-        /// d - the depth (scale on y-axis) of the object
-        /// VALUES ENTERED AND RETURNED SHOULD BE IN TERMS OF PLAYER SCALE
-        /// </summary>
-        /// <param name="_viewCoor">The coordinates of the value in the viewable grid (as of right now should only be two)</param>
-        /// <param name="_currCell">A current cell displayed in the veiwable grid</param>
-        /// <param name="_currD">The current dimensions the viewable grid is showing</param>
-        /// <param name="_val">The value</param>
-        /// <param name="_cScale">The desired scale of the cell interior</param>
-        /// <param name="_bScale">The desired scale of bounds</param>
-        /// <param name="_oScale">The desired scale of opening</param>
-        /// <returns>A 2D array with information about the bound represented by the given value, if value given does not represent a bound, an empty 2D array</returns>
-        public static int[,] GetBoundInfo(int[] _viewCoor, int[] _currCell, int[] _currD, int _val, int _cScale, int _bScale, int _oScale)
-        {
-            //If not a bound value, return an empty array
-            if (!IsBound(_val))
-                return new int[0, 0];
-
-            int[,] _bInfo;
-
-            //Find and fill in information
-            //Get upper left corner coordinate of cell in drawing
-            int[] _cellULCoor = new int[2];
-            _cellULCoor[X] = _bScale + ((int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
-            _cellULCoor[Y] = _bScale + ((int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
-
-            //If closed bound, one set of information, else two sets of information
-            if (ClosedBound(_val))
-            {
-                _bInfo = new int[1, 4];
-                //Check if on X
-                if (((int)Math.Abs(_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
-                {
-                    _bInfo[0, X] = _cScale + (_bScale / 2) + _cellULCoor[X];
-                    _bInfo[0, 2] = _bScale;
-                }
-                else
-                {
-                    _bInfo[0, X] = (_cScale / 2) + _cellULCoor[X];
-                    _bInfo[0, 2] = _cScale;
-                }
-                //Check if on Y
-                if (((int)Math.Abs(_viewCoor[Y] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
-                {
-                    _bInfo[0, Y] = _cScale + (_bScale / 2) + _cellULCoor[Y];
-                    _bInfo[0, 3] = _bScale;
-                }
-                else
-                {
-                    _bInfo[0, Y] = (_cScale / 2) + _cellULCoor[Y];
-                    _bInfo[0, 3] = _cScale;
-                }
-            }
-            else
-            {
-                _bInfo = new int[2, 4];
-                //Get opening center
-                int[] _centerCoor = FindOpeningCenter(X, true, _currD, _currCell);
-
-                //Start and end points within cell for bounds
-                int[,] _startEndPoints = new int[2, 2];
-                _startEndPoints[0, 0] = 0;
-                _startEndPoints[1, 1] = _cScale;
-
-                //Must be on X or on Y, never a corner
-                //If on X
-                if (((int)Math.Abs(_viewCoor[X] - BOUND_SCALE) % (BOUND_SCALE + CELL_SCALE)) >= CELL_SCALE)
-                {
-                    _bInfo[0, X] = _cScale + (_bScale / 2) + _cellULCoor[X];
-                    _bInfo[0, 2] = _bScale;
-                    _bInfo[1, X] = _cScale + (_bScale / 2) + _cellULCoor[X];
-                    _bInfo[1, 2] = _bScale;
-
-                    _startEndPoints[0, 1] = _centerCoor[Y] - (_oScale / 2);
-                    _startEndPoints[1, 0] = _centerCoor[Y] + (_oScale / 2);
-
-                    _bInfo[0, Y] = ((_startEndPoints[0, 0] + _startEndPoints[0, 1]) / 2) + _cellULCoor[Y];
-                    _bInfo[1, Y] = ((_startEndPoints[1, 0] + _startEndPoints[1, 1]) / 2) + _cellULCoor[Y];
-                    _bInfo[0, 3] = (int)Math.Abs((double)_startEndPoints[0, 0] - _startEndPoints[0, 1]);
-                    _bInfo[1, 3] = (int)Math.Abs((double)_startEndPoints[1, 0] - _startEndPoints[1, 1]);
-                }
-                else
-                {
-                    _bInfo[0, Y] = _cScale + (_bScale / 2) + _cellULCoor[Y];
-                    _bInfo[0, 3] = _bScale;
-                    _bInfo[1, Y] = _cScale + (_bScale / 2) + _cellULCoor[Y];
-                    _bInfo[1, 3] = _bScale;
-
-                    _startEndPoints[0, 1] = _centerCoor[X] - (_oScale / 2);
-                    _startEndPoints[1, 0] = _centerCoor[X] + (_oScale / 2);
-
-                    _bInfo[0, X] = ((_startEndPoints[0, 0] + _startEndPoints[0, 1]) / 2) + _cellULCoor[X];
-                    _bInfo[1, X] = ((_startEndPoints[1, 0] + _startEndPoints[1, 1]) / 2) + _cellULCoor[X];
-                    _bInfo[0, 2] = (int)Math.Abs((double)_startEndPoints[0, 0] - _startEndPoints[0, 1]);
-                    _bInfo[1, 2] = (int)Math.Abs((double)_startEndPoints[1, 0] - _startEndPoints[1, 1]);
-                }
-            }
-
-            //Return information
-            return _bInfo;
-        }*/
-
         /// <summary>
         /// Calculates and returns information about bounds from a value and other information
         /// Will return a 2D array of integers that contains n objects and four pieces of information for each object
@@ -725,80 +616,6 @@ namespace MDMazeGeneration
             //Return information
             return _bInfo;
         }
-
-        /*/// <summary>
-        /// Calculates and returns information about a cell interior from a value and other information
-        /// Will return a 2D array of integers that contains n objects and four pieces of information for each object
-        /// [cX, cY, w, d]
-        /// cX - the x value on which the object is centered (-1 if object is not in interior)
-        /// cY - the y value on which the object is centered (-1 if object is not in interior)
-        /// w - the width (scale on x-axis) of the object (-1 if object is not in interior)
-        /// d - the depth (scale on y-axis) of the object (-1 if object is not in interior)
-        /// 0 - opening ascending
-        /// 1 - opening descending
-        /// VALUES ENTERED AND RETURNED SHOULD BE IN TERMS OF PLAYER SCALE
-        /// </summary>
-        /// <param name="_viewCoor">The coordinates of the value in the viewable grid (as of right now should only be two)</param>
-        /// <param name="_currCell">A current cell displayed in the veiwable grid</param>
-        /// <param name="_currD">The current dimensions the viewable grid is showing</param>
-        /// <param name="_val">The value</param>
-        /// <param name="_cScale">The desired scale of the cell interior</param>
-        /// <param name="_bScale">The desired scale of bounds</param>
-        /// <param name="_oScale">The desired scale of opening</param>
-        /// <returns>A 2D array with information about the interior represented by the given value, if value given does not represent cell interior, an empty 2D array</returns>
-        public static int[,] GetInteriorInfo(int[] _viewCoor, int[] _currCell, int[] _currD, int _val, int _cScale, int _bScale, int _oScale)
-        {
-            //If not a bound value, return an empty array
-            if (!IsInterior(_val))
-                return new int[0, 0];
-
-            //Create iInfo
-            int[,] _iInfo = new int[2, 4];
-            for (int _i = 0; _i < _iInfo.GetLength(0); _i++)
-                for (int _j = 0; _j < _iInfo.GetLength(1); _j++)
-                    _iInfo[_i, _j] = -1;
-
-            //Find and fill in information
-            //Get upper left corner coordinate of cell in drawing
-            int[] _cellULCoor = new int[2];
-            _cellULCoor[X] = _bScale + ((int)Math.Floor((double)(_viewCoor[X] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
-            _cellULCoor[Y] = _bScale + ((int)Math.Floor((double)(_viewCoor[Y] - BOUND_SCALE) / (BOUND_SCALE + CELL_SCALE)) * (_bScale + _cScale));
-            //If ascending
-            if (Ascending(_val))
-            {
-                int[] _openingC = FindOpeningCenter(Z, true, _currD, _currCell);
-                _iInfo[0, X] = _openingC[X] + _cellULCoor[X];
-                _iInfo[0, Y] = _openingC[Y] + _cellULCoor[Y];
-                _iInfo[0, 2] = _oScale;
-                _iInfo[0, 3] = _oScale;
-            }
-            //If descending
-            if (Descending(_val))
-            {
-                int[] _openingC = FindOpeningCenter(Z, false, _currD, _currCell);
-                _iInfo[1, X] = _openingC[X] + _cellULCoor[X];
-                _iInfo[1, Y] = _openingC[Y] + _cellULCoor[Y];
-                _iInfo[1, 2] = _oScale;
-                _iInfo[1, 3] = _oScale;
-            }
-
-            if (((_iInfo[0, X] - _cellULCoor[X] < _oScale / 2 ||
-                _iInfo[0, X] - _cellULCoor[X] > _cScale - (_oScale / 2)) &&
-                 _iInfo[0, X] != -1) ||
-                ((_iInfo[0, Y] - _cellULCoor[Y] < _oScale / 2 ||
-                _iInfo[0, Y] - _cellULCoor[Y] > _cScale - (_oScale / 2)) &&
-                 _iInfo[0, Y] != -1) ||
-                ((_iInfo[1, X] - _cellULCoor[X] < _oScale / 2 ||
-                _iInfo[1, X] - _cellULCoor[X] > _cScale - (_oScale / 2)) &&
-                 _iInfo[1, X] != -1) ||
-                ((_iInfo[1, Y] - _cellULCoor[Y] < _oScale / 2 ||
-                _iInfo[1, Y] - _cellULCoor[Y] > _cScale - (_oScale / 2)) &&
-                 _iInfo[1, Y] != -1))
-                Console.ReadLine();
-
-            //Return information
-            return _iInfo;
-        }*/
 
         /// <summary>
         /// Calculates and returns information about a cell interior from a value and other information
@@ -918,22 +735,6 @@ namespace MDMazeGeneration
             //Return center
             return _center;
         }
-
-        /*/// <summary>
-        /// Checks if the cell at the specified coordinates is viewable in the current 2D layer
-        /// </summary>
-        /// <param name="_toCheck">Cell to check</param>
-        /// <param name="_currCell">Current cell in layer</param>
-        /// <param name="_x">X dimension of layer</param>
-        /// <param name="_y">Y dimension of layer</param>
-        /// <returns>If cell is viewable in layer</returns>
-        static bool IsViewable(int[] _toCheck, int[] _currCell, int _x, int _y)
-        {
-            for (int _d = 0; _d < dimensions; _d++)
-                if (_d != _x && _d != _y && _toCheck[_d] != _currCell[_d])
-                    return false;
-            return true;
-        }*/
 
         /// <summary>
         /// Gets a specified bit from a value
@@ -1898,117 +1699,6 @@ namespace MDMazeGeneration
 
                 return _setArray;
             }
-
-
-            /*/// <summary>
-            /// Counts cells in set that are in last part of last dimension
-            /// </summary>
-            /// <returns>Count of cells</returns>
-            public int CountSetCellsinLast()
-            {
-                return CountSetCellsinLast(GetFirstInSet());
-            }
-
-            /// <summary>
-            /// Counts cells in set that are in last part of last dimension
-            /// </summary>
-            /// <param name="_c">Cell currently looking at</param>
-            /// <returns>Count of cells</returns>
-            protected int CountSetCellsinLast(Cell _c)
-            {
-                int _count = 0;
-                if (coordinates[0] == DimensionInfo[0] - 1)
-                    _count++;
-                if (_c.childern.Count > 0)
-                    foreach (Cell _child in _c.childern)
-                        _count += GetSetSize(_child);
-                return _count;
-            }*/
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //      UNUSED METHODS
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-            /* /// <summary>
-             /// Closes the bounds in a specified dimension of a cell
-             /// </summary>
-             /// <param name="_d">Specified dimension</param>
-             protected void ForceCloseBound(int _d)
-             {
-                 bounds = (ushort)SetBitTo(bounds, _d, 1);
-                 //If not open, remove neighbor from set
-                 if (!Open(_d))
-                 {
-                     RemoveNeighborToSet(_d);
-                 }
-             }*/
-
-
-            /*/// <summary>
-            /// Rebalances the max heap sorted set of cells recursively
-            /// For after a set is edited.
-            /// </summary>
-            protected void RebalanceSet()
-            {
-                //Return if cell has no chilern
-                if (childern.Count == 0)
-                {
-                    return;
-                }
-
-                //If cell has less childern than it should
-                if (childern.Count < dimensions)
-                {
-                    Cell _current = childern.Max();
-
-                    while ((childern.Count < dimensions) && (_current.childern.Count != 0))
-                    {
-                        Cell _holdChild = _current.childern.Max();
-                        _holdChild.RemoveParent();
-                        AddChild(_holdChild);
-                    }
-                    _current.RebalanceSet();
-                }
-
-                //If cell has more childern than it should
-                if (childern.Count > dimensions)
-                {
-                    //List<Cell> _hold = new List<Cell>();
-
-                    while (childern.Count > dimensions)
-                    {
-                        Cell _holdChild = childern.Min();
-                        _holdChild.RemoveParent();
-                        childern.Min().AddChild(_holdChild);
-                    }
-                }
-            }*/
-
-
-            /*/// <summary>
-            /// Removes a neighboring cell in a specified dimension from the current cell's set should the neigher exist and is part of set
-            /// </summary>
-            /// <param name="_d">Specified dimension</param>
-            protected void RemoveNeighborFromSet(int _d)
-            {
-                //Check if neighbor exists
-                if (!HasNeighbor(_d))
-                {
-                    return;
-                }
-
-                //Check if same set
-                if (!SameSet(neighbors[_d]))
-                {
-                    return;
-                }
-
-                //Add neighbor to set
-                neighbors[_d].RemoveFromSet();
-            }*/
-
-
         }
     }
 }
